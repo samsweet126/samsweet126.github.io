@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useList } from "@/lib/queries";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/chess")({
@@ -20,10 +21,19 @@ export const Route = createFileRoute("/chess")({
   ),
 });
 
+const MODES: { key: string; label: string; type: string }[] = [
+  { key: "chess_rapid", label: "Rapid", type: "rapid" },
+  { key: "chess_blitz", label: "Blitz", type: "blitz" },
+  { key: "chess_bullet", label: "Bullet", type: "bullet" },
+  { key: "chess_daily", label: "Daily", type: "daily" },
+];
+
 function ChessPage() {
   const { user } = useAuth();
+  const qc = useQueryClient();
   const [username, setUsername] = useState("");
   const [saved, setSaved] = useState("");
+  const { data: snapshots = [] } = useList<any>("chess_ratings", "date");
 
   useEffect(() => {
     if (!user) return;
@@ -51,12 +61,19 @@ function ChessPage() {
     },
   });
 
-  const modes: { key: string; label: string }[] = [
-    { key: "chess_rapid", label: "Rapid" },
-    { key: "chess_blitz", label: "Blitz" },
-    { key: "chess_bullet", label: "Bullet" },
-    { key: "chess_daily", label: "Daily" },
-  ];
+  const snapshot = async () => {
+    if (!user || !saved || !stats.data) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const rows = MODES
+      .map((m) => ({ mode: m, r: (stats.data as any)[m.key]?.last?.rating }))
+      .filter((x) => x.r)
+      .map(({ mode, r }) => ({ user_id: user.id, username: saved, rating: r, rating_type: mode.type, date: today }));
+    if (!rows.length) return toast.error("No ratings to save");
+    const { error } = await supabase.from("chess_ratings" as any).insert(rows);
+    if (error) return toast.error(error.message);
+    toast.success(`Saved ${rows.length} rating snapshots`);
+    qc.invalidateQueries({ queryKey: ["chess_ratings"] });
+  };
 
   return (
     <>
@@ -73,24 +90,41 @@ function ChessPage() {
         {stats.isLoading && <p className="text-muted-foreground text-sm">Loading…</p>}
         {stats.isError && <p className="text-destructive text-sm">{(stats.error as Error).message}</p>}
         {stats.data && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {modes.map((m) => {
-              const d: any = (stats.data as any)[m.key];
-              const r = d?.last?.rating;
-              const best = d?.best?.rating;
-              const rec = d?.record;
-              return (
-                <Card key={m.key}>
-                  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">{m.label}</CardTitle></CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-semibold">{r ?? "—"}</div>
-                    {best && <p className="text-xs text-muted-foreground mt-1">Best {best}</p>}
-                    {rec && <p className="text-xs text-muted-foreground">{rec.win}W · {rec.loss}L · {rec.draw}D</p>}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {MODES.map((m) => {
+                const d: any = (stats.data as any)[m.key];
+                const r = d?.last?.rating;
+                const best = d?.best?.rating;
+                const rec = d?.record;
+                return (
+                  <Card key={m.key}>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">{m.label}</CardTitle></CardHeader>
+                    <CardContent>
+                      <div className="text-3xl font-semibold">{r ?? "—"}</div>
+                      {best && <p className="text-xs text-muted-foreground mt-1">Best {best}</p>}
+                      {rec && <p className="text-xs text-muted-foreground">{rec.win}W · {rec.loss}L · {rec.draw}D</p>}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+            <Button onClick={snapshot} variant="secondary">Save snapshot for today</Button>
+          </>
+        )}
+
+        {snapshots.length > 0 && (
+          <Card className="p-4">
+            <h3 className="text-sm font-medium mb-3">Recent snapshots</h3>
+            <div className="space-y-1 text-sm">
+              {snapshots.slice(0, 20).map((s) => (
+                <div key={s.id} className="flex justify-between text-muted-foreground">
+                  <span>{s.date} · {s.rating_type}</span>
+                  <span className="font-medium text-foreground">{s.rating}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
         )}
       </div>
     </>

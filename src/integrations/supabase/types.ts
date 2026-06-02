@@ -17,40 +17,40 @@ export type Database = {
       books: {
         Row: {
           author: string
-          book_type: string | null
           created_at: string
-          finished_on: string | null
+          date_finished: string | null
+          date_started: string | null
           id: string
           pages: number | null
           rating: number | null
-          started_on: string | null
           title: string
+          type: string | null
           user_id: string
           year: number | null
         }
         Insert: {
           author: string
-          book_type?: string | null
           created_at?: string
-          finished_on?: string | null
+          date_finished?: string | null
+          date_started?: string | null
           id?: string
           pages?: number | null
           rating?: number | null
-          started_on?: string | null
           title: string
+          type?: string | null
           user_id: string
           year?: number | null
         }
         Update: {
           author?: string
-          book_type?: string | null
           created_at?: string
-          finished_on?: string | null
+          date_finished?: string | null
+          date_started?: string | null
           id?: string
           pages?: number | null
           rating?: number | null
-          started_on?: string | null
           title?: string
+          type?: string | null
           user_id?: string
           year?: number | null
         }
@@ -74,65 +74,125 @@ export type Database = {
         }
         Relationships: []
       }
+      chess_ratings: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          rating: number
+          rating_type: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          rating: number
+          rating_type: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          rating?: number
+          rating_type?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      finances: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          category: string
+          created_at?: string
+          date: string
+          id?: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       trips: {
         Row: {
           airline: string | null
           city: string
           created_at: string
+          date: string
           id: string
           roundtrip: boolean
           state: string
           travel_type: string
-          trip_date: string
           user_id: string
         }
         Insert: {
           airline?: string | null
           city: string
           created_at?: string
+          date: string
           id?: string
           roundtrip?: boolean
           state: string
           travel_type: string
-          trip_date: string
           user_id: string
         }
         Update: {
           airline?: string | null
           city?: string
           created_at?: string
+          date?: string
           id?: string
           roundtrip?: boolean
           state?: string
           travel_type?: string
-          trip_date?: string
           user_id?: string
         }
         Relationships: []
       }
       workouts: {
         Row: {
-          activity_date: string
           created_at: string
-          duration_minutes: number
+          date: string
           id: string
           miles: number
+          time_minutes: number
           user_id: string
         }
         Insert: {
-          activity_date: string
           created_at?: string
-          duration_minutes?: number
+          date: string
           id?: string
           miles?: number
+          time_minutes?: number
           user_id: string
         }
         Update: {
-          activity_date?: string
           created_at?: string
-          duration_minutes?: number
+          date?: string
           id?: string
           miles?: number
+          time_minutes?: number
           user_id?: string
         }
         Relationships: []

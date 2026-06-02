@@ -28,8 +28,8 @@ export const Route = createFileRoute("/travel")({
 function TravelPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const { data = [] } = useList<any>("trips", "trip_date");
-  const [form, setForm] = useState({ city: "", state: "", trip_date: "", travel_type: "flight", airline: "", roundtrip: false });
+  const { data = [] } = useList<any>("trips", "date");
+  const [form, setForm] = useState({ city: "", state: "", date: "", travel_type: "flight", airline: "", roundtrip: false });
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,13 +38,13 @@ function TravelPage() {
       user_id: user.id,
       city: form.city,
       state: form.state,
-      trip_date: form.trip_date,
+      date: form.date,
       travel_type: form.travel_type,
       airline: form.travel_type === "flight" ? (form.airline || null) : null,
       roundtrip: form.roundtrip,
     });
     if (error) return toast.error(error.message);
-    setForm({ city: "", state: "", trip_date: "", travel_type: "flight", airline: "", roundtrip: false });
+    setForm({ city: "", state: "", date: "", travel_type: "flight", airline: "", roundtrip: false });
     qc.invalidateQueries({ queryKey: ["trips"] });
   };
 
@@ -65,7 +65,7 @@ function TravelPage() {
           <form onSubmit={add} className="grid grid-cols-1 sm:grid-cols-6 gap-3 items-end">
             <div className="sm:col-span-2"><Label>City</Label><Input required value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
             <div><Label>State</Label><Input required value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} /></div>
-            <div><Label>Date</Label><Input type="date" required value={form.trip_date} onChange={(e) => setForm({ ...form, trip_date: e.target.value })} /></div>
+            <div><Label>Date</Label><Input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
             <div>
               <Label>Type</Label>
               <Select value={form.travel_type} onValueChange={(v) => setForm({ ...form, travel_type: v })}>
@@ -96,7 +96,7 @@ function TravelPage() {
                 <TableRow key={t.id}>
                   <TableCell className="font-medium">{t.city}</TableCell>
                   <TableCell>{t.state}</TableCell>
-                  <TableCell>{t.trip_date}</TableCell>
+                  <TableCell>{t.date}</TableCell>
                   <TableCell className="capitalize">{t.travel_type}</TableCell>
                   <TableCell>{t.airline ?? "—"}</TableCell>
                   <TableCell>{t.roundtrip ? "Yes" : "No"}</TableCell>
