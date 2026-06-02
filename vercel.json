@@ -1,5 +1,6 @@
 {
   "framework": "tanstack-start",
+  "outputDirectory": ".output",
   "rewrites": [
     {
       "source": "/(.*)",
