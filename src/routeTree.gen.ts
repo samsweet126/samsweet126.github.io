@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TravelRouteImport } from './routes/travel'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as FitnessRouteImport } from './routes/fitness'
+import { Route as FinancesRouteImport } from './routes/finances'
 import { Route as ChessRouteImport } from './routes/chess'
 import { Route as BooksRouteImport } from './routes/books'
 import { Route as IndexRouteImport } from './routes/index'
@@ -29,6 +30,11 @@ const LoginRoute = LoginRouteImport.update({
 const FitnessRoute = FitnessRouteImport.update({
   id: '/fitness',
   path: '/fitness',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FinancesRoute = FinancesRouteImport.update({
+  id: '/finances',
+  path: '/finances',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChessRoute = ChessRouteImport.update({
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/books': typeof BooksRoute
   '/chess': typeof ChessRoute
+  '/finances': typeof FinancesRoute
   '/fitness': typeof FitnessRoute
   '/login': typeof LoginRoute
   '/travel': typeof TravelRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/books': typeof BooksRoute
   '/chess': typeof ChessRoute
+  '/finances': typeof FinancesRoute
   '/fitness': typeof FitnessRoute
   '/login': typeof LoginRoute
   '/travel': typeof TravelRoute
@@ -68,22 +76,46 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/books': typeof BooksRoute
   '/chess': typeof ChessRoute
+  '/finances': typeof FinancesRoute
   '/fitness': typeof FitnessRoute
   '/login': typeof LoginRoute
   '/travel': typeof TravelRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/books' | '/chess' | '/fitness' | '/login' | '/travel'
+  fullPaths:
+    | '/'
+    | '/books'
+    | '/chess'
+    | '/finances'
+    | '/fitness'
+    | '/login'
+    | '/travel'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/books' | '/chess' | '/fitness' | '/login' | '/travel'
-  id: '__root__' | '/' | '/books' | '/chess' | '/fitness' | '/login' | '/travel'
+  to:
+    | '/'
+    | '/books'
+    | '/chess'
+    | '/finances'
+    | '/fitness'
+    | '/login'
+    | '/travel'
+  id:
+    | '__root__'
+    | '/'
+    | '/books'
+    | '/chess'
+    | '/finances'
+    | '/fitness'
+    | '/login'
+    | '/travel'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BooksRoute: typeof BooksRoute
   ChessRoute: typeof ChessRoute
+  FinancesRoute: typeof FinancesRoute
   FitnessRoute: typeof FitnessRoute
   LoginRoute: typeof LoginRoute
   TravelRoute: typeof TravelRoute
@@ -110,6 +142,13 @@ declare module '@tanstack/react-router' {
       path: '/fitness'
       fullPath: '/fitness'
       preLoaderRoute: typeof FitnessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/finances': {
+      id: '/finances'
+      path: '/finances'
+      fullPath: '/finances'
+      preLoaderRoute: typeof FinancesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/chess': {
@@ -140,6 +179,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BooksRoute: BooksRoute,
   ChessRoute: ChessRoute,
+  FinancesRoute: FinancesRoute,
   FitnessRoute: FitnessRoute,
   LoginRoute: LoginRoute,
   TravelRoute: TravelRoute,
@@ -147,3 +187,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

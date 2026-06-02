@@ -3,7 +3,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { AppLayout, PageHeader } from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useList } from "@/lib/queries";
-import { Plane, Dumbbell, BookOpen, Trophy } from "lucide-react";
+import { Plane, Dumbbell, BookOpen, Trophy, Wallet } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
@@ -35,13 +35,15 @@ function Stat({ to, icon: Icon, label, value, sub }: any) {
 }
 
 function Dashboard() {
-  const trips = useList<any>("trips", "trip_date");
-  const workouts = useList<any>("workouts", "activity_date");
-  const books = useList<any>("books", "finished_on");
+  const trips = useList<any>("trips", "date");
+  const workouts = useList<any>("workouts", "date");
+  const books = useList<any>("books", "date_finished");
+  const finances = useList<any>("finances", "date");
 
   const flights = (trips.data ?? []).filter((t) => t.travel_type === "flight").length;
-  const totalMinutes = (workouts.data ?? []).reduce((a, w) => a + Number(w.duration_minutes ?? 0), 0);
+  const totalMinutes = (workouts.data ?? []).reduce((a, w) => a + Number(w.time_minutes ?? 0), 0);
   const totalMiles = (workouts.data ?? []).reduce((a, w) => a + Number(w.miles ?? 0), 0);
+  const totalSpend = (finances.data ?? []).reduce((a, f) => a + Number(f.amount ?? 0), 0);
 
   return (
     <>
@@ -51,6 +53,7 @@ function Dashboard() {
         <Stat to="/chess" icon={Trophy} label="Chess" value="View ratings" sub="From Chess.com" />
         <Stat to="/fitness" icon={Dumbbell} label="Fitness" value={`${workouts.data?.length ?? 0} sessions`} sub={`${totalMiles.toFixed(1)} mi · ${Math.round(totalMinutes / 60)} h`} />
         <Stat to="/books" icon={BookOpen} label="Books read" value={`${books.data?.length ?? 0}`} sub={books.data?.[0]?.title ? `Last: ${books.data[0].title}` : "—"} />
+        <Stat to="/finances" icon={Wallet} label="Finances" value={`$${totalSpend.toFixed(2)}`} sub={`${finances.data?.length ?? 0} entries`} />
       </div>
     </>
   );

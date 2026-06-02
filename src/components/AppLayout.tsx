@@ -1,7 +1,7 @@
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import { ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Home, Plane, Trophy, Dumbbell, BookOpen, LogOut } from "lucide-react";
+import { Home, Plane, Trophy, Dumbbell, BookOpen, Wallet, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -11,6 +11,7 @@ const nav = [
   { to: "/chess", label: "Chess", icon: Trophy },
   { to: "/fitness", label: "Fitness", icon: Dumbbell },
   { to: "/books", label: "Books", icon: BookOpen },
+  { to: "/finances", label: "Finances", icon: Wallet },
 ];
 
 export function AppLayout({ children }: { children: ReactNode }) {
