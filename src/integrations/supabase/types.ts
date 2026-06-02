@@ -17,30 +17,42 @@ export type Database = {
       books: {
         Row: {
           author: string
+          book_type: string | null
           created_at: string
-          finished_on: string
+          finished_on: string | null
           id: string
-          rating: number
+          pages: number | null
+          rating: number | null
+          started_on: string | null
           title: string
           user_id: string
+          year: number | null
         }
         Insert: {
           author: string
+          book_type?: string | null
           created_at?: string
-          finished_on: string
+          finished_on?: string | null
           id?: string
-          rating: number
+          pages?: number | null
+          rating?: number | null
+          started_on?: string | null
           title: string
           user_id: string
+          year?: number | null
         }
         Update: {
           author?: string
+          book_type?: string | null
           created_at?: string
-          finished_on?: string
+          finished_on?: string | null
           id?: string
-          rating?: number
+          pages?: number | null
+          rating?: number | null
+          started_on?: string | null
           title?: string
           user_id?: string
+          year?: number | null
         }
         Relationships: []
       }
@@ -62,122 +74,65 @@ export type Database = {
         }
         Relationships: []
       }
-      finance_entries: {
-        Row: {
-          amount: number
-          category: string
-          created_at: string
-          id: string
-          month: string
-          notes: string | null
-          user_id: string
-        }
-        Insert: {
-          amount: number
-          category: string
-          created_at?: string
-          id?: string
-          month: string
-          notes?: string | null
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          category?: string
-          created_at?: string
-          id?: string
-          month?: string
-          notes?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       trips: {
         Row: {
+          airline: string | null
+          city: string
           created_at: string
-          destination: string
-          flights: number
           id: string
-          miles: number
+          roundtrip: boolean
+          state: string
+          travel_type: string
           trip_date: string
           user_id: string
         }
         Insert: {
+          airline?: string | null
+          city: string
           created_at?: string
-          destination: string
-          flights?: number
           id?: string
-          miles?: number
+          roundtrip?: boolean
+          state: string
+          travel_type: string
           trip_date: string
           user_id: string
         }
         Update: {
+          airline?: string | null
+          city?: string
           created_at?: string
-          destination?: string
-          flights?: number
           id?: string
-          miles?: number
+          roundtrip?: boolean
+          state?: string
+          travel_type?: string
           trip_date?: string
           user_id?: string
         }
         Relationships: []
       }
-      watchlist: {
-        Row: {
-          created_at: string
-          id: string
-          kind: string
-          rating: number
-          title: string
-          user_id: string
-          watched_on: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          kind: string
-          rating: number
-          title: string
-          user_id: string
-          watched_on: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          kind?: string
-          rating?: number
-          title?: string
-          user_id?: string
-          watched_on?: string
-        }
-        Relationships: []
-      }
       workouts: {
         Row: {
-          activity: string
           activity_date: string
           created_at: string
           duration_minutes: number
           id: string
-          notes: string | null
+          miles: number
           user_id: string
         }
         Insert: {
-          activity: string
           activity_date: string
           created_at?: string
           duration_minutes?: number
           id?: string
-          notes?: string | null
+          miles?: number
           user_id: string
         }
         Update: {
-          activity?: string
           activity_date?: string
           created_at?: string
           duration_minutes?: number
           id?: string
-          notes?: string | null
+          miles?: number
           user_id?: string
         }
         Relationships: []
