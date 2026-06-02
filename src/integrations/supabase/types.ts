@@ -14,7 +14,174 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      books: {
+        Row: {
+          author: string
+          created_at: string
+          finished_on: string
+          id: string
+          rating: number
+          title: string
+          user_id: string
+        }
+        Insert: {
+          author: string
+          created_at?: string
+          finished_on: string
+          id?: string
+          rating: number
+          title: string
+          user_id: string
+        }
+        Update: {
+          author?: string
+          created_at?: string
+          finished_on?: string
+          id?: string
+          rating?: number
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chess_accounts: {
+        Row: {
+          updated_at: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          updated_at?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          updated_at?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      finance_entries: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          id: string
+          month: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          id?: string
+          month: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          id?: string
+          month?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trips: {
+        Row: {
+          created_at: string
+          destination: string
+          flights: number
+          id: string
+          miles: number
+          trip_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          destination: string
+          flights?: number
+          id?: string
+          miles?: number
+          trip_date: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          destination?: string
+          flights?: number
+          id?: string
+          miles?: number
+          trip_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      watchlist: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          rating: number
+          title: string
+          user_id: string
+          watched_on: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          rating: number
+          title: string
+          user_id: string
+          watched_on: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          rating?: number
+          title?: string
+          user_id?: string
+          watched_on?: string
+        }
+        Relationships: []
+      }
+      workouts: {
+        Row: {
+          activity: string
+          activity_date: string
+          created_at: string
+          duration_minutes: number
+          id: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          activity: string
+          activity_date: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          activity?: string
+          activity_date?: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
