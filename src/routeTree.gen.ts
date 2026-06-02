@@ -9,20 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WatchingRouteImport } from './routes/watching'
 import { Route as TravelRouteImport } from './routes/travel'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as FitnessRouteImport } from './routes/fitness'
-import { Route as FinanceRouteImport } from './routes/finance'
 import { Route as ChessRouteImport } from './routes/chess'
 import { Route as BooksRouteImport } from './routes/books'
 import { Route as IndexRouteImport } from './routes/index'
 
-const WatchingRoute = WatchingRouteImport.update({
-  id: '/watching',
-  path: '/watching',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TravelRoute = TravelRouteImport.update({
   id: '/travel',
   path: '/travel',
@@ -36,11 +29,6 @@ const LoginRoute = LoginRouteImport.update({
 const FitnessRoute = FitnessRouteImport.update({
   id: '/fitness',
   path: '/fitness',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FinanceRoute = FinanceRouteImport.update({
-  id: '/finance',
-  path: '/finance',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChessRoute = ChessRouteImport.update({
@@ -63,86 +51,46 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/books': typeof BooksRoute
   '/chess': typeof ChessRoute
-  '/finance': typeof FinanceRoute
   '/fitness': typeof FitnessRoute
   '/login': typeof LoginRoute
   '/travel': typeof TravelRoute
-  '/watching': typeof WatchingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/books': typeof BooksRoute
   '/chess': typeof ChessRoute
-  '/finance': typeof FinanceRoute
   '/fitness': typeof FitnessRoute
   '/login': typeof LoginRoute
   '/travel': typeof TravelRoute
-  '/watching': typeof WatchingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/books': typeof BooksRoute
   '/chess': typeof ChessRoute
-  '/finance': typeof FinanceRoute
   '/fitness': typeof FitnessRoute
   '/login': typeof LoginRoute
   '/travel': typeof TravelRoute
-  '/watching': typeof WatchingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/books'
-    | '/chess'
-    | '/finance'
-    | '/fitness'
-    | '/login'
-    | '/travel'
-    | '/watching'
+  fullPaths: '/' | '/books' | '/chess' | '/fitness' | '/login' | '/travel'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/books'
-    | '/chess'
-    | '/finance'
-    | '/fitness'
-    | '/login'
-    | '/travel'
-    | '/watching'
-  id:
-    | '__root__'
-    | '/'
-    | '/books'
-    | '/chess'
-    | '/finance'
-    | '/fitness'
-    | '/login'
-    | '/travel'
-    | '/watching'
+  to: '/' | '/books' | '/chess' | '/fitness' | '/login' | '/travel'
+  id: '__root__' | '/' | '/books' | '/chess' | '/fitness' | '/login' | '/travel'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BooksRoute: typeof BooksRoute
   ChessRoute: typeof ChessRoute
-  FinanceRoute: typeof FinanceRoute
   FitnessRoute: typeof FitnessRoute
   LoginRoute: typeof LoginRoute
   TravelRoute: typeof TravelRoute
-  WatchingRoute: typeof WatchingRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/watching': {
-      id: '/watching'
-      path: '/watching'
-      fullPath: '/watching'
-      preLoaderRoute: typeof WatchingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/travel': {
       id: '/travel'
       path: '/travel'
@@ -162,13 +110,6 @@ declare module '@tanstack/react-router' {
       path: '/fitness'
       fullPath: '/fitness'
       preLoaderRoute: typeof FitnessRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/finance': {
-      id: '/finance'
-      path: '/finance'
-      fullPath: '/finance'
-      preLoaderRoute: typeof FinanceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/chess': {
@@ -199,12 +140,20 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BooksRoute: BooksRoute,
   ChessRoute: ChessRoute,
-  FinanceRoute: FinanceRoute,
   FitnessRoute: FitnessRoute,
   LoginRoute: LoginRoute,
   TravelRoute: TravelRoute,
-  WatchingRoute: WatchingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

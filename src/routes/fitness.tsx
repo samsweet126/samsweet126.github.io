@@ -27,7 +27,7 @@ function FitnessPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data = [] } = useList<any>("workouts", "activity_date");
-  const [form, setForm] = useState({ activity_date: "", activity: "", duration_minutes: "", notes: "" });
+  const [form, setForm] = useState({ activity_date: "", miles: "", duration_minutes: "" });
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,12 +35,11 @@ function FitnessPage() {
     const { error } = await supabase.from("workouts").insert({
       user_id: user.id,
       activity_date: form.activity_date,
-      activity: form.activity,
+      miles: Number(form.miles) || 0,
       duration_minutes: Number(form.duration_minutes) || 0,
-      notes: form.notes || null,
     });
     if (error) return toast.error(error.message);
-    setForm({ activity_date: "", activity: "", duration_minutes: "", notes: "" });
+    setForm({ activity_date: "", miles: "", duration_minutes: "" });
     qc.invalidateQueries({ queryKey: ["workouts"] });
   };
   const del = async (id: string) => {
@@ -49,31 +48,30 @@ function FitnessPage() {
   };
 
   const totalMin = data.reduce((a, w) => a + Number(w.duration_minutes ?? 0), 0);
+  const totalMiles = data.reduce((a, w) => a + Number(w.miles ?? 0), 0);
 
   return (
     <>
-      <PageHeader title="Fitness log" description={`${data.length} workouts · ${Math.round(totalMin / 60)} h logged`} />
+      <PageHeader title="Fitness log" description={`${data.length} sessions · ${totalMiles.toFixed(1)} mi · ${Math.round(totalMin / 60)} h`} />
       <div className="max-w-5xl mx-auto px-8 py-8 space-y-6">
         <Card className="p-4">
-          <form onSubmit={add} className="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
+          <form onSubmit={add} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
             <div><Label>Date</Label><Input type="date" required value={form.activity_date} onChange={(e) => setForm({ ...form, activity_date: e.target.value })} /></div>
-            <div className="sm:col-span-2"><Label>Activity</Label><Input required value={form.activity} onChange={(e) => setForm({ ...form, activity: e.target.value })} placeholder="Run, lift, yoga…" /></div>
-            <div><Label>Duration (min)</Label><Input type="number" min="0" value={form.duration_minutes} onChange={(e) => setForm({ ...form, duration_minutes: e.target.value })} /></div>
-            <div><Label>Notes</Label><Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
-            <Button type="submit" className="sm:col-span-5">Add workout</Button>
+            <div><Label>Miles</Label><Input type="number" step="0.01" min="0" value={form.miles} onChange={(e) => setForm({ ...form, miles: e.target.value })} /></div>
+            <div><Label>Time (min)</Label><Input type="number" min="0" value={form.duration_minutes} onChange={(e) => setForm({ ...form, duration_minutes: e.target.value })} /></div>
+            <Button type="submit">Add</Button>
           </form>
         </Card>
         <Card>
           <Table>
-            <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Activity</TableHead><TableHead>Duration</TableHead><TableHead>Notes</TableHead><TableHead></TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Miles</TableHead><TableHead>Time</TableHead><TableHead></TableHead></TableRow></TableHeader>
             <TableBody>
-              {data.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No workouts logged.</TableCell></TableRow>}
+              {data.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No sessions logged.</TableCell></TableRow>}
               {data.map((w) => (
                 <TableRow key={w.id}>
                   <TableCell>{w.activity_date}</TableCell>
-                  <TableCell className="font-medium">{w.activity}</TableCell>
+                  <TableCell>{Number(w.miles ?? 0).toFixed(2)}</TableCell>
                   <TableCell>{w.duration_minutes} min</TableCell>
-                  <TableCell className="text-muted-foreground">{w.notes}</TableCell>
                   <TableCell><Button variant="ghost" size="icon" onClick={() => del(w.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
                 </TableRow>
               ))}
