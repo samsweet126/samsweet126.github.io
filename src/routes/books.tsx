@@ -31,44 +31,63 @@ function BooksPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data = [] } = useList<any>("books", "finished_on");
-  const [form, setForm] = useState({ title: "", author: "", finished_on: "", rating: "5" });
+  const [form, setForm] = useState({
+    title: "", author: "", started_on: "", finished_on: "",
+    rating: "5", pages: "", book_type: "", year: "",
+  });
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     const { error } = await supabase.from("books").insert({
-      user_id: user.id, title: form.title, author: form.author, finished_on: form.finished_on, rating: Number(form.rating),
+      user_id: user.id,
+      title: form.title,
+      author: form.author,
+      started_on: form.started_on || null,
+      finished_on: form.finished_on || null,
+      rating: form.rating ? Number(form.rating) : null,
+      pages: form.pages ? Number(form.pages) : null,
+      book_type: form.book_type || null,
+      year: form.year ? Number(form.year) : null,
     });
     if (error) return toast.error(error.message);
-    setForm({ title: "", author: "", finished_on: "", rating: "5" });
+    setForm({ title: "", author: "", started_on: "", finished_on: "", rating: "5", pages: "", book_type: "", year: "" });
     qc.invalidateQueries({ queryKey: ["books"] });
   };
   const del = async (id: string) => { await supabase.from("books").delete().eq("id", id); qc.invalidateQueries({ queryKey: ["books"] }); };
 
   return (
     <>
-      <PageHeader title="Books read" description={`${data.length} books finished`} />
+      <PageHeader title="Books read" description={`${data.length} books`} />
       <div className="max-w-5xl mx-auto px-8 py-8 space-y-6">
         <Card className="p-4">
-          <form onSubmit={add} className="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
-            <div className="sm:col-span-2"><Label>Title</Label><Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
-            <div><Label>Author</Label><Input required value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} /></div>
-            <div><Label>Finished</Label><Input type="date" required value={form.finished_on} onChange={(e) => setForm({ ...form, finished_on: e.target.value })} /></div>
-            <div><Label>Rating</Label><Input type="number" min="1" max="5" required value={form.rating} onChange={(e) => setForm({ ...form, rating: e.target.value })} /></div>
-            <Button type="submit" className="sm:col-span-5">Add book</Button>
+          <form onSubmit={add} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+            <div className="sm:col-span-2"><Label>Book</Label><Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
+            <div className="sm:col-span-2"><Label>Author</Label><Input required value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} /></div>
+            <div><Label>Date started</Label><Input type="date" value={form.started_on} onChange={(e) => setForm({ ...form, started_on: e.target.value })} /></div>
+            <div><Label>Date finished</Label><Input type="date" value={form.finished_on} onChange={(e) => setForm({ ...form, finished_on: e.target.value })} /></div>
+            <div><Label>Rating</Label><Input type="number" min="1" max="5" value={form.rating} onChange={(e) => setForm({ ...form, rating: e.target.value })} /></div>
+            <div><Label>Pages</Label><Input type="number" min="0" value={form.pages} onChange={(e) => setForm({ ...form, pages: e.target.value })} /></div>
+            <div><Label>Type</Label><Input value={form.book_type} onChange={(e) => setForm({ ...form, book_type: e.target.value })} placeholder="Fiction, memoir…" /></div>
+            <div><Label>Year</Label><Input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} placeholder="Published" /></div>
+            <Button type="submit" className="sm:col-span-4">Add book</Button>
           </form>
         </Card>
         <Card>
           <Table>
-            <TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Author</TableHead><TableHead>Finished</TableHead><TableHead>Rating</TableHead><TableHead></TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Book</TableHead><TableHead>Author</TableHead><TableHead>Started</TableHead><TableHead>Finished</TableHead><TableHead>Pages</TableHead><TableHead>Type</TableHead><TableHead>Year</TableHead><TableHead>Rating</TableHead><TableHead></TableHead></TableRow></TableHeader>
             <TableBody>
-              {data.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No books yet.</TableCell></TableRow>}
+              {data.length === 0 && <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No books yet.</TableCell></TableRow>}
               {data.map((b) => (
                 <TableRow key={b.id}>
                   <TableCell className="font-medium">{b.title}</TableCell>
                   <TableCell>{b.author}</TableCell>
-                  <TableCell>{b.finished_on}</TableCell>
-                  <TableCell><Stars n={b.rating} /></TableCell>
+                  <TableCell>{b.started_on ?? "—"}</TableCell>
+                  <TableCell>{b.finished_on ?? "—"}</TableCell>
+                  <TableCell>{b.pages ?? "—"}</TableCell>
+                  <TableCell>{b.book_type ?? "—"}</TableCell>
+                  <TableCell>{b.year ?? "—"}</TableCell>
+                  <TableCell>{b.rating ? <Stars n={b.rating} /> : "—"}</TableCell>
                   <TableCell><Button variant="ghost" size="icon" onClick={() => del(b.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
                 </TableRow>
               ))}

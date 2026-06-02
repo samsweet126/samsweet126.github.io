@@ -3,7 +3,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { AppLayout, PageHeader } from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useList } from "@/lib/queries";
-import { Plane, Dumbbell, BookOpen, Film, Wallet, Trophy } from "lucide-react";
+import { Plane, Dumbbell, BookOpen, Trophy } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
@@ -38,27 +38,19 @@ function Dashboard() {
   const trips = useList<any>("trips", "trip_date");
   const workouts = useList<any>("workouts", "activity_date");
   const books = useList<any>("books", "finished_on");
-  const watch = useList<any>("watchlist", "watched_on");
-  const finance = useList<any>("finance_entries", "month");
 
-  const totalMiles = (trips.data ?? []).reduce((a, t) => a + Number(t.miles ?? 0), 0);
-  const totalFlights = (trips.data ?? []).reduce((a, t) => a + Number(t.flights ?? 0), 0);
+  const flights = (trips.data ?? []).filter((t) => t.travel_type === "flight").length;
   const totalMinutes = (workouts.data ?? []).reduce((a, w) => a + Number(w.duration_minutes ?? 0), 0);
-  const thisMonth = new Date().toISOString().slice(0, 7);
-  const monthSpend = (finance.data ?? [])
-    .filter((f) => (f.month ?? "").startsWith(thisMonth))
-    .reduce((a, f) => a + Number(f.amount ?? 0), 0);
+  const totalMiles = (workouts.data ?? []).reduce((a, w) => a + Number(w.miles ?? 0), 0);
 
   return (
     <>
       <PageHeader title="Dashboard" description="A snapshot of your life this season." />
       <div className="max-w-5xl mx-auto px-8 py-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Stat to="/travel" icon={Plane} label="Travel" value={`${trips.data?.length ?? 0} trips`} sub={`${totalMiles.toLocaleString()} mi · ${totalFlights} flights`} />
+        <Stat to="/travel" icon={Plane} label="Travel" value={`${trips.data?.length ?? 0} trips`} sub={`${flights} flights`} />
         <Stat to="/chess" icon={Trophy} label="Chess" value="View ratings" sub="From Chess.com" />
-        <Stat to="/fitness" icon={Dumbbell} label="Fitness" value={`${workouts.data?.length ?? 0} workouts`} sub={`${Math.round(totalMinutes / 60)} h logged`} />
+        <Stat to="/fitness" icon={Dumbbell} label="Fitness" value={`${workouts.data?.length ?? 0} sessions`} sub={`${totalMiles.toFixed(1)} mi · ${Math.round(totalMinutes / 60)} h`} />
         <Stat to="/books" icon={BookOpen} label="Books read" value={`${books.data?.length ?? 0}`} sub={books.data?.[0]?.title ? `Last: ${books.data[0].title}` : "—"} />
-        <Stat to="/watching" icon={Film} label="Movies & TV" value={`${watch.data?.length ?? 0}`} sub={watch.data?.[0]?.title ? `Last: ${watch.data[0].title}` : "—"} />
-        <Stat to="/finance" icon={Wallet} label="This month" value={`$${monthSpend.toFixed(0)}`} sub={`${finance.data?.length ?? 0} entries total`} />
       </div>
     </>
   );
