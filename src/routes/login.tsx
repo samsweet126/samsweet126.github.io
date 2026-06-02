@@ -34,8 +34,9 @@ function LoginPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      const fn = mode === "signin" ? supabase.auth.signInWithPassword : supabase.auth.signUp;
-      const { error } = await fn({ email, password });
+      const { error } = mode === "signin"
+        ? await supabase.auth.signInWithPassword({ email, password })
+        : await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/` } });
       if (error) throw error;
       if (mode === "signup") toast.success("Account created. Check email if verification is required.");
     } catch (err: any) {
