@@ -13,7 +13,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useList } from "@/lib/queries";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Trash2, Star, Search } from "lucide-react";
+import { Trash2, Star, Search, ArrowUpDown } from "lucide-react";
 
 export const Route = createFileRoute("/books")({
   head: () => ({ meta: [{ title: "Books · Goal Tracker" }] }),
@@ -39,7 +39,6 @@ interface BookData {
 
 function SearchDialog({ open, onOpenChange, onSelect }: { open: boolean; onOpenChange: (open: boolean) => void; onSelect: (book: BookData) => void }) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<any[]>([]);
 
   const search = useQuery({
     queryKey: ["book-search", query],
@@ -105,11 +104,15 @@ function SearchDialog({ open, onOpenChange, onSelect }: { open: boolean; onOpenC
   );
 }
 
+type SortKey = keyof any;
+
 function BooksPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data = [] } = useList<any>("books", "date_finished");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [form, setForm] = useState({
     title: "",
     author: "",
@@ -120,6 +123,27 @@ function BooksPage() {
     type: "",
     year: "",
     genre: "",
+    cover: "",
+  });
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  const sortedData = [...data].sort((a, b) => {
+    if (!sortKey) return 0;
+    const aVal = a[sortKey];
+    const bVal = b[sortKey];
+    if (aVal == null) return 1;
+    if (bVal == null) return -1;
+    if (aVal < bVal) return sortDir === "asc" ? -1 : 1;
+    if (aVal > bVal) return sortDir === "asc" ? 1 : -1;
+    return 0;
   });
 
   const handleSearchSelect = (book: BookData) => {
@@ -130,6 +154,7 @@ function BooksPage() {
       pages: book.pages?.toString() || "",
       year: book.year?.toString() || "",
       genre: book.genre || "",
+      cover: book.cover || "",
     });
   };
 
@@ -151,6 +176,7 @@ function BooksPage() {
       year: form.year ? Number(form.year) : null,
     };
     if (form.genre) payload.genre = form.genre;
+    if (form.cover) payload.cover = form.cover;
     const { error } = await supabase.from("books").insert(payload);
     if (error) {
       console.error("Insert error:", error);
@@ -167,6 +193,7 @@ function BooksPage() {
       type: "",
       year: "",
       genre: "",
+      cover: "",
     });
     qc.invalidateQueries({ queryKey: ["books"] });
     toast.success("Book added!");
@@ -176,6 +203,15 @@ function BooksPage() {
     await supabase.from("books").delete().eq("id", id);
     qc.invalidateQueries({ queryKey: ["books"] });
   };
+
+  const SortHeader = ({ label, sortBy }: { label: string; sortBy: SortKey }) => (
+    <TableHead className="cursor-pointer hover:bg-muted" onClick={() => handleSort(sortBy)}>
+      <div className="flex items-center gap-2">
+        {label}
+        <ArrowUpDown className={`h-4 w-4 ${sortKey === sortBy ? "text-primary" : "text-muted-foreground/30"}`} />
+      </div>
+    </TableHead>
+  );
 
   return (
     <>
@@ -237,34 +273,38 @@ function BooksPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Book</TableHead>
-                <TableHead>Author</TableHead>
-                <TableHead>Genre</TableHead>
-                <TableHead>Pages</TableHead>
-                <TableHead>Year</TableHead>
-                <TableHead>Started</TableHead>
-                <TableHead>Finished</TableHead>
-                <TableHead>Rating</TableHead>
+                <TableHead className="w-12"></TableHead>
+                <SortHeader label="Book" sortBy="title" />
+                <SortHeader label="Author" sortBy="author" />
+                <SortHeader label="Genre" sortBy="genre" />
+                <SortHeader label="Pages" sortBy="pages" />
+                <SortHeader label="Year" sortBy="year" />
+                <SortHeader label="Started" sortBy="date_started" />
+                <SortHeader label="Finished" sortBy="date_finished" />
+                <SortHeader label="Rating" sortBy="rating" />
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                     No books yet.
                   </TableCell>
                 </TableRow>
               )}
-              {data.map((b) => (
+              {sortedData.map((b) => (
                 <TableRow key={b.id}>
+                  <TableCell className="w-12">
+                    {b.cover && <img src={b.cover} alt="" className="h-12 w-8 object-cover rounded" />}
+                  </TableCell>
                   <TableCell className="font-medium">{b.title}</TableCell>
                   <TableCell>{b.author}</TableCell>
                   <TableCell>{b.genre ?? "—"}</TableCell>
                   <TableCell>{b.pages ?? "—"}</TableCell>
                   <TableCell>{b.year ?? "—"}</TableCell>
-                  <TableCell>{b.started_on ?? "—"}</TableCell>
-                  <TableCell>{b.finished_on ?? "—"}</TableCell>
+                  <TableCell>{b.date_started ?? "—"}</TableCell>
+                  <TableCell>{b.date_finished ?? "—"}</TableCell>
                   <TableCell>{b.rating ? <Stars n={b.rating} /> : "—"}</TableCell>
                   <TableCell>
                     <Button variant="ghost" size="icon" onClick={() => del(b.id)}>
