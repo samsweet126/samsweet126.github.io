@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { Trash2, Star } from "lucide-react";
 
 export const Route = createFileRoute("/books")({
-  head: () => ({ meta: [{ title: "Books · My Life" }] }),
+  head: () => ({ meta: [{ title: "Books · Goal Tracker" }] }),
   component: () => (
     <RequireAuth>
       <AppLayout><BooksPage /></AppLayout>

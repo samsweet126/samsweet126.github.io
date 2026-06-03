@@ -13,7 +13,7 @@ import { useList } from "@/lib/queries";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/chess")({
-  head: () => ({ meta: [{ title: "Chess · My Life" }] }),
+  head: () => ({ meta: [{ title: "Chess · Goal Tracker" }] }),
   component: () => (
     <RequireAuth>
       <AppLayout><ChessPage /></AppLayout>

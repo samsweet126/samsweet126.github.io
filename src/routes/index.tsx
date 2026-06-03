@@ -7,7 +7,7 @@ import { Plane, Dumbbell, BookOpen, Trophy, Wallet } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
-  head: () => ({ meta: [{ title: "Dashboard · My Life" }, { name: "description", content: "Personal life tracker dashboard" }] }),
+  head: () => ({ meta: [{ title: "Dashboard · Goal Tracker" }, { name: "description", content: "Personal life tracker dashboard" }] }),
   component: () => (
     <RequireAuth>
       <AppLayout>

@@ -27,7 +27,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-background flex">
       <aside className="w-60 shrink-0 border-r border-sidebar-border bg-sidebar flex flex-col">
         <div className="px-6 py-6">
-          <h1 className="text-lg font-semibold tracking-tight text-sidebar-foreground">My Life</h1>
+          <h1 className="text-lg font-semibold tracking-tight text-sidebar-foreground">Goal Tracker</h1>
           <p className="text-xs text-muted-foreground">Personal tracker</p>
         </div>
         <nav className="flex-1 px-3 space-y-1">

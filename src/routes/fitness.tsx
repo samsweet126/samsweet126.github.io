@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/fitness")({
-  head: () => ({ meta: [{ title: "Fitness · My Life" }] }),
+  head: () => ({ meta: [{ title: "Fitness · Goal Tracker" }] }),
   component: () => (
     <RequireAuth>
       <AppLayout><FitnessPage /></AppLayout>

@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "Sign in · My Life" }] }),
+  head: () => ({ meta: [{ title: "Sign in · Goal Tracker" }] }),
   component: LoginPage,
 });
 
@@ -55,7 +55,7 @@ function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl">My Life</CardTitle>
+          <CardTitle className="text-2xl">Goal Tracker</CardTitle>
           <CardDescription>Your personal life tracker</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
