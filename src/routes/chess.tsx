@@ -44,17 +44,6 @@ function ChessPage() {
   const rapidBest = (stats.data as any)?.chess_rapid?.best?.rating;
   const rapidRecord = (stats.data as any)?.chess_rapid?.record;
 
-  const snapshot = async () => {
-    if (!user || !stats.data) return;
-    const today = new Date().toISOString().slice(0, 10);
-    if (!rapidRating) return toast.error("No rapid rating to save");
-    const { error } = await supabase.from("chess_ratings" as any).insert([
-      { user_id: user.id, username: USERNAME, rating: rapidRating, rating_type: "rapid", date: today },
-    ]);
-    if (error) return toast.error(error.message);
-    toast.success("Rapid rating snapshot saved");
-    qc.invalidateQueries({ queryKey: ["chess_ratings"] });
-  };
 
   return (
     <>
@@ -77,14 +66,13 @@ function ChessPage() {
                 )}
               </CardContent>
             </Card>
-            <Button onClick={snapshot} variant="secondary">Save snapshot for today</Button>
           </>
         )}
 
         <Card className="p-4">
           <h3 className="text-sm font-medium mb-4">Rapid rating over time</h3>
           {rapidSnapshots.length === 0 ? (
-            <p className="text-muted-foreground text-sm py-12 text-center">Save snapshots to see your rating history here.</p>
+            <p className="text-muted-foreground text-sm py-12 text-center">Rating history will appear here (updated every Sunday).</p>
           ) : (
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={rapidSnapshots}>
