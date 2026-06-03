@@ -6,13 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useList } from "@/lib/queries";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Trash2, Star } from "lucide-react";
+import { Trash2, Star, Search } from "lucide-react";
 
 export const Route = createFileRoute("/books")({
   head: () => ({ meta: [{ title: "Books · Goal Tracker" }] }),
@@ -27,14 +28,106 @@ function Stars({ n }: { n: number }) {
   return <div className="flex">{[1, 2, 3, 4, 5].map((i) => <Star key={i} className={`h-4 w-4 ${i <= n ? "fill-primary text-primary" : "text-muted-foreground/30"}`} />)}</div>;
 }
 
+interface BookData {
+  title: string;
+  author: string;
+  pages?: number;
+  year?: number;
+  genre?: string;
+  cover?: string;
+}
+
+function SearchDialog({ open, onOpenChange, onSelect }: { open: boolean; onOpenChange: (open: boolean) => void; onSelect: (book: BookData) => void }) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<any[]>([]);
+
+  const search = useQuery({
+    queryKey: ["book-search", query],
+    enabled: !!query && query.length > 2,
+    queryFn: async () => {
+      const key = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
+      const res = await fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&key=${key}`
+      );
+      if (!res.ok) throw new Error("Search failed");
+      return res.json();
+    },
+  });
+
+  const handleSelect = (item: any) => {
+    const info = item.volumeInfo;
+    onSelect({
+      title: info.title,
+      author: info.authors?.[0] || "",
+      pages: info.pageCount,
+      year: info.publishedDate ? parseInt(info.publishedDate) : undefined,
+      genre: info.categories?.[0] || "",
+      cover: info.imageLinks?.thumbnail,
+    });
+    onOpenChange(false);
+    setQuery("");
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader><DialogTitle>Search books</DialogTitle></DialogHeader>
+        <div className="space-y-4">
+          <Input
+            placeholder="Search by title or author…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            autoFocus
+          />
+          {search.isLoading && <p className="text-muted-foreground text-sm">Searching…</p>}
+          {search.isError && <p className="text-destructive text-sm">Search failed</p>}
+          {search.data?.items && (
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {search.data.items.map((item: any, i: number) => {
+                const info = item.volumeInfo;
+                return (
+                  <div key={i} className="p-3 border rounded hover:bg-muted cursor-pointer" onClick={() => handleSelect(item)}>
+                    <div className="font-medium">{info.title}</div>
+                    <div className="text-sm text-muted-foreground">{info.authors?.join(", ") || "Unknown author"}</div>
+                    {info.publishedDate && <div className="text-xs text-muted-foreground">{info.publishedDate}</div>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function BooksPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data = [] } = useList<any>("books", "date_finished");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [form, setForm] = useState({
-    title: "", author: "", date_started: "", date_finished: "",
-    rating: "5", pages: "", type: "", year: "",
+    title: "",
+    author: "",
+    date_started: "",
+    date_finished: "",
+    rating: "5",
+    pages: "",
+    type: "",
+    year: "",
+    genre: "",
   });
+
+  const handleSearchSelect = (book: BookData) => {
+    setForm({
+      ...form,
+      title: book.title,
+      author: book.author,
+      pages: book.pages?.toString() || "",
+      year: book.year?.toString() || "",
+      genre: book.genre || "",
+    });
+  };
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,59 +136,138 @@ function BooksPage() {
       user_id: user.id,
       title: form.title,
       author: form.author,
-      date_started: form.date_started || null,
-      date_finished: form.date_finished || null,
+      started_on: form.date_started || null,
+      finished_on: form.date_finished || null,
       rating: form.rating ? Number(form.rating) : null,
       pages: form.pages ? Number(form.pages) : null,
-      type: form.type || null,
+      book_type: form.type || null,
       year: form.year ? Number(form.year) : null,
+      genre: form.genre || null,
     };
     const { error } = await supabase.from("books").insert(payload);
     if (error) return toast.error(error.message);
-    setForm({ title: "", author: "", date_started: "", date_finished: "", rating: "5", pages: "", type: "", year: "" });
+    setForm({
+      title: "",
+      author: "",
+      date_started: "",
+      date_finished: "",
+      rating: "5",
+      pages: "",
+      type: "",
+      year: "",
+      genre: "",
+    });
+    qc.invalidateQueries({ queryKey: ["books"] });
+    toast.success("Book added!");
+  };
+
+  const del = async (id: string) => {
+    await supabase.from("books").delete().eq("id", id);
     qc.invalidateQueries({ queryKey: ["books"] });
   };
-  const del = async (id: string) => { await supabase.from("books").delete().eq("id", id); qc.invalidateQueries({ queryKey: ["books"] }); };
 
   return (
     <>
       <PageHeader title="Books read" description={`${data.length} books`} />
-      <div className="max-w-5xl mx-auto px-8 py-8 space-y-6">
+      <div className="max-w-6xl mx-auto px-8 py-8 space-y-6">
         <Card className="p-4">
-          <form onSubmit={add} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
-            <div className="sm:col-span-2"><Label>Book</Label><Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
-            <div className="sm:col-span-2"><Label>Author</Label><Input required value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} /></div>
-            <div><Label>Date started</Label><Input type="date" value={form.date_started} onChange={(e) => setForm({ ...form, date_started: e.target.value })} /></div>
-            <div><Label>Date finished</Label><Input type="date" value={form.date_finished} onChange={(e) => setForm({ ...form, date_finished: e.target.value })} /></div>
-            <div><Label>Rating</Label><Input type="number" min="1" max="5" value={form.rating} onChange={(e) => setForm({ ...form, rating: e.target.value })} /></div>
-            <div><Label>Pages</Label><Input type="number" min="0" value={form.pages} onChange={(e) => setForm({ ...form, pages: e.target.value })} /></div>
-            <div><Label>Type</Label><Input value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} placeholder="Fiction, memoir…" /></div>
-            <div><Label>Year</Label><Input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} placeholder="Published" /></div>
-            <Button type="submit" className="sm:col-span-4">Add book</Button>
+          <form onSubmit={add} className="space-y-4">
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => setSearchOpen(true)}>
+                <Search className="h-4 w-4 mr-2" />
+                Search Google Books
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              <div className="sm:col-span-2">
+                <Label>Title</Label>
+                <Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+              </div>
+              <div className="sm:col-span-2">
+                <Label>Author</Label>
+                <Input required value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} />
+              </div>
+              <div>
+                <Label>Genre</Label>
+                <Input value={form.genre} onChange={(e) => setForm({ ...form, genre: e.target.value })} />
+              </div>
+              <div>
+                <Label>Year</Label>
+                <Input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} />
+              </div>
+              <div>
+                <Label>Pages</Label>
+                <Input type="number" value={form.pages} onChange={(e) => setForm({ ...form, pages: e.target.value })} />
+              </div>
+              <div>
+                <Label>Date started</Label>
+                <Input type="date" value={form.date_started} onChange={(e) => setForm({ ...form, date_started: e.target.value })} />
+              </div>
+              <div>
+                <Label>Date finished</Label>
+                <Input type="date" required value={form.date_finished} onChange={(e) => setForm({ ...form, date_finished: e.target.value })} />
+              </div>
+              <div>
+                <Label>Rating</Label>
+                <Input type="number" min="1" max="5" value={form.rating} onChange={(e) => setForm({ ...form, rating: e.target.value })} />
+              </div>
+              <div>
+                <Label>Type</Label>
+                <Input value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} placeholder="Fiction, memoir…" />
+              </div>
+            </div>
+            <Button type="submit" className="w-full sm:w-auto">
+              Add book
+            </Button>
           </form>
         </Card>
+
         <Card>
           <Table>
-            <TableHeader><TableRow><TableHead>Book</TableHead><TableHead>Author</TableHead><TableHead>Started</TableHead><TableHead>Finished</TableHead><TableHead>Pages</TableHead><TableHead>Type</TableHead><TableHead>Year</TableHead><TableHead>Rating</TableHead><TableHead></TableHead></TableRow></TableHeader>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Book</TableHead>
+                <TableHead>Author</TableHead>
+                <TableHead>Genre</TableHead>
+                <TableHead>Pages</TableHead>
+                <TableHead>Year</TableHead>
+                <TableHead>Started</TableHead>
+                <TableHead>Finished</TableHead>
+                <TableHead>Rating</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
             <TableBody>
-              {data.length === 0 && <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No books yet.</TableCell></TableRow>}
+              {data.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                    No books yet.
+                  </TableCell>
+                </TableRow>
+              )}
               {data.map((b) => (
                 <TableRow key={b.id}>
                   <TableCell className="font-medium">{b.title}</TableCell>
                   <TableCell>{b.author}</TableCell>
-                  <TableCell>{b.date_started ?? "—"}</TableCell>
-                  <TableCell>{b.date_finished ?? "—"}</TableCell>
+                  <TableCell>{b.genre ?? "—"}</TableCell>
                   <TableCell>{b.pages ?? "—"}</TableCell>
-                  <TableCell>{b.type ?? "—"}</TableCell>
                   <TableCell>{b.year ?? "—"}</TableCell>
+                  <TableCell>{b.started_on ?? "—"}</TableCell>
+                  <TableCell>{b.finished_on ?? "—"}</TableCell>
                   <TableCell>{b.rating ? <Stars n={b.rating} /> : "—"}</TableCell>
-                  <TableCell><Button variant="ghost" size="icon" onClick={() => del(b.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="icon" onClick={() => del(b.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </Card>
       </div>
+
+      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} onSelect={handleSearchSelect} />
     </>
   );
 }
