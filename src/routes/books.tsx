@@ -120,7 +120,6 @@ function BooksPage() {
     date_finished: "",
     rating: "5",
     pages: "",
-    type: "",
     year: "",
     genre: "",
     cover: "",
@@ -172,7 +171,6 @@ function BooksPage() {
       date_finished: form.date_finished,
       rating: form.rating ? Number(form.rating) : null,
       pages: form.pages ? Number(form.pages) : null,
-      type: form.type || null,
       year: form.year ? Number(form.year) : null,
     };
     if (form.genre) payload.genre = form.genre;
@@ -190,7 +188,6 @@ function BooksPage() {
       date_finished: "",
       rating: "5",
       pages: "",
-      type: "",
       year: "",
       genre: "",
       cover: "",
@@ -257,10 +254,6 @@ function BooksPage() {
               <div>
                 <Label>Rating</Label>
                 <Input type="number" min="1" max="5" value={form.rating} onChange={(e) => setForm({ ...form, rating: e.target.value })} />
-              </div>
-              <div>
-                <Label>Type</Label>
-                <Input value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} placeholder="Fiction, memoir…" />
               </div>
             </div>
             <Button type="submit" className="w-full sm:w-auto">
