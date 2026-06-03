@@ -308,12 +308,12 @@ function BooksPage() {
               const authorData = Object.entries(authorMap)
                 .map(([author, count]) => ({ author, count }))
                 .sort((a, b) => b.count - a.count)
-                .slice(0, 10);
+                .slice(0, 5);
               return authorData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={280}>
+                <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={authorData} layout="vertical" margin={{ left: 150 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis type="number" tick={{ fontSize: 11 }} />
+                    <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
                     <YAxis dataKey="author" type="category" tick={{ fontSize: 10 }} />
                     <Tooltip />
                     <Bar dataKey="count" fill="#8b5cf6" />
