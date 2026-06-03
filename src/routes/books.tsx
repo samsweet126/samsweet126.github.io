@@ -14,6 +14,7 @@ import { useList } from "@/lib/queries";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Trash2, Star, Search, ArrowUpDown } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
 
 export const Route = createFileRoute("/books")({
   head: () => ({ meta: [{ title: "Books · Goal Tracker" }] }),
@@ -214,6 +215,99 @@ function BooksPage() {
     <>
       <PageHeader title="Books read" description={`${data.length} books`} />
       <div className="max-w-6xl mx-auto px-8 py-8 space-y-6">
+        {/* Analytics section */}
+        <div className="space-y-6">
+          {/* Books by month */}
+          <Card className="p-4">
+            <h3 className="text-sm font-medium mb-4">Books read by month</h3>
+            {(() => {
+              const monthMap: Record<string, number> = {};
+              data.forEach((b) => {
+                if (b.date_finished) {
+                  const month = b.date_finished.substring(0, 7);
+                  monthMap[month] = (monthMap[month] || 0) + 1;
+                }
+              });
+              const monthData = Object.entries(monthMap)
+                .sort()
+                .map(([month, count]) => ({ month, count }));
+              return monthData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={monthData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-muted-foreground text-sm py-8 text-center">No data yet</p>
+              );
+            })()}
+          </Card>
+
+          {/* Top 10 authors */}
+          <Card className="p-4">
+            <h3 className="text-sm font-medium mb-4">Top 10 authors</h3>
+            {(() => {
+              const authorMap: Record<string, number> = {};
+              data.forEach((b) => {
+                authorMap[b.author] = (authorMap[b.author] || 0) + 1;
+              });
+              const authorData = Object.entries(authorMap)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10)
+                .map(([author, count]) => ({ author, count }));
+              return authorData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={authorData} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis type="number" tick={{ fontSize: 11 }} />
+                    <YAxis dataKey="author" width={120} tick={{ fontSize: 10 }} />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#8b5cf6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-muted-foreground text-sm py-8 text-center">No data yet</p>
+              );
+            })()}
+          </Card>
+
+          {/* Ratings distribution */}
+          <Card className="p-4">
+            <h3 className="text-sm font-medium mb-4">Ratings distribution</h3>
+            {(() => {
+              const ratingData = [
+                { rating: 5, count: data.filter((b) => b.rating === 5).length },
+                { rating: 4, count: data.filter((b) => b.rating === 4).length },
+                { rating: 3, count: data.filter((b) => b.rating === 3).length },
+                { rating: 2, count: data.filter((b) => b.rating === 2).length },
+                { rating: 1, count: data.filter((b) => b.rating === 1).length },
+              ].filter((r) => r.count > 0);
+              const colors = ["#10b981", "#84cc16", "#f59e0b", "#f97316", "#ef4444"];
+              return ratingData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={ratingData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="rating" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip />
+                    <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                      {ratingData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={colors[5 - entry.rating]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-muted-foreground text-sm py-8 text-center">No ratings yet</p>
+              );
+            })()}
+          </Card>
+        </div>
+
         <Card className="p-4">
           <form onSubmit={add} className="space-y-4">
             <div className="flex gap-2">
