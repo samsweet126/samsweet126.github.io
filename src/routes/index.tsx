@@ -3,8 +3,11 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { AppLayout, PageHeader } from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useList } from "@/lib/queries";
+import { useQuery } from "@tanstack/react-query";
 import { Plane, Dumbbell, BookOpen, Trophy, Wallet } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+
+const CHESS_USERNAME = "sam12678";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [{ title: "Dashboard · Goal Tracker" }, { name: "description", content: "Personal life tracker dashboard" }] }),
@@ -40,6 +43,16 @@ function Dashboard() {
   const books = useList<any>("books", "date_finished");
   const finances = useList<any>("finances", "date");
 
+  const chessStats = useQuery({
+    queryKey: ["chess", CHESS_USERNAME],
+    queryFn: async () => {
+      const res = await fetch(`https://api.chess.com/pub/player/${CHESS_USERNAME}/stats`);
+      if (!res.ok) throw new Error("Chess.com fetch failed");
+      return res.json();
+    },
+  });
+  const rapidRating = (chessStats.data as any)?.chess_rapid?.last?.rating;
+
   const flights = (trips.data ?? []).filter((t) => t.travel_type === "flight").length;
   const totalMinutes = (workouts.data ?? []).reduce((a, w) => a + Number(w.time_minutes ?? 0), 0);
   const totalMiles = (workouts.data ?? []).reduce((a, w) => a + Number(w.miles ?? 0), 0);
@@ -50,7 +63,7 @@ function Dashboard() {
       <PageHeader title="Dashboard" description="A snapshot of your life this season." />
       <div className="max-w-5xl mx-auto px-8 py-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Stat to="/travel" icon={Plane} label="Travel" value={`${trips.data?.length ?? 0} trips`} sub={`${flights} flights`} />
-        <Stat to="/chess" icon={Trophy} label="Chess" value="View ratings" sub="From Chess.com" />
+        <Stat to="/chess" icon={Trophy} label="Chess" value={rapidRating ? `${rapidRating}` : "—"} sub="Rapid rating" />
         <Stat to="/fitness" icon={Dumbbell} label="Fitness" value={`${workouts.data?.length ?? 0} sessions`} sub={`${totalMiles.toFixed(1)} mi · ${Math.round(totalMinutes / 60)} h`} />
         <Stat to="/books" icon={BookOpen} label="Books read" value={`${books.data?.length ?? 0}`} sub={books.data?.[0]?.title ? `Last: ${books.data[0].title}` : "—"} />
         <Stat to="/finances" icon={Wallet} label="Finances" value={`$${totalSpend.toFixed(2)}`} sub={`${finances.data?.length ?? 0} entries`} />
