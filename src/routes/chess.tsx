@@ -81,9 +81,11 @@ function ChessPage() {
           </>
         )}
 
-        {rapidSnapshots.length > 0 && (
-          <Card className="p-4">
-            <h3 className="text-sm font-medium mb-4">Rapid rating over time</h3>
+        <Card className="p-4">
+          <h3 className="text-sm font-medium mb-4">Rapid rating over time</h3>
+          {rapidSnapshots.length === 0 ? (
+            <p className="text-muted-foreground text-sm py-12 text-center">Save snapshots to see your rating history here.</p>
+          ) : (
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={rapidSnapshots}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -93,8 +95,8 @@ function ChessPage() {
                 <Line type="monotone" dataKey="rating" dot={true} strokeWidth={2} className="stroke-primary" />
               </LineChart>
             </ResponsiveContainer>
-          </Card>
-        )}
+          )}
+        </Card>
       </div>
     </>
   );

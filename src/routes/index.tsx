@@ -9,7 +9,7 @@ import { Link } from "@tanstack/react-router";
 
 const CHESS_USERNAME = "sam12678";
 const CHESS_GOAL = 1500;
-const CHESS_FLOOR = 400;
+const CHESS_FLOOR = 1200;
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [{ title: "Dashboard · Goal Tracker" }, { name: "description", content: "Personal life tracker dashboard" }] }),
@@ -100,7 +100,7 @@ function Dashboard() {
 
   return (
     <>
-      <PageHeader title="Dashboard" description="A snapshot of your life this season." />
+      <PageHeader title="Dashboard" />
       <div className="max-w-5xl mx-auto px-8 py-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Stat to="/travel" icon={Plane} label="Travel" value={`${trips.data?.length ?? 0} trips`} sub={`${flights} flights`} />
         <ChessGoalWidget rating={rapidRating} />

@@ -85,11 +85,15 @@ function SearchDialog({ open, onOpenChange, onSelect }: { open: boolean; onOpenC
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {search.data.items.map((item: any, i: number) => {
                 const info = item.volumeInfo;
+                const cover = info.imageLinks?.thumbnail;
                 return (
-                  <div key={i} className="p-3 border rounded hover:bg-muted cursor-pointer" onClick={() => handleSelect(item)}>
-                    <div className="font-medium">{info.title}</div>
-                    <div className="text-sm text-muted-foreground">{info.authors?.join(", ") || "Unknown author"}</div>
-                    {info.publishedDate && <div className="text-xs text-muted-foreground">{info.publishedDate}</div>}
+                  <div key={i} className="p-3 border rounded hover:bg-muted cursor-pointer flex gap-3" onClick={() => handleSelect(item)}>
+                    {cover && <img src={cover} alt="" className="h-16 w-12 object-cover rounded flex-shrink-0" />}
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{info.title}</div>
+                      <div className="text-xs text-muted-foreground">{info.authors?.join(", ") || "Unknown author"}</div>
+                      {info.publishedDate && <div className="text-xs text-muted-foreground">{info.publishedDate}</div>}
+                    </div>
                   </div>
                 );
               })}
@@ -131,21 +135,28 @@ function BooksPage() {
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !form.date_finished) {
+      toast.error("Date finished is required");
+      return;
+    }
     const payload: any = {
       user_id: user.id,
       title: form.title,
       author: form.author,
       started_on: form.date_started || null,
-      finished_on: form.date_finished || null,
+      finished_on: form.date_finished,
       rating: form.rating ? Number(form.rating) : null,
       pages: form.pages ? Number(form.pages) : null,
       book_type: form.type || null,
       year: form.year ? Number(form.year) : null,
-      genre: form.genre || null,
     };
+    if (form.genre) payload.genre = form.genre;
     const { error } = await supabase.from("books").insert(payload);
-    if (error) return toast.error(error.message);
+    if (error) {
+      console.error("Insert error:", error);
+      toast.error(error.message);
+      return;
+    }
     setForm({
       title: "",
       author: "",
