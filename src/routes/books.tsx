@@ -300,23 +300,22 @@ function BooksPage() {
           <Card className="p-4">
             <h3 className="text-sm font-medium mb-4">Top authors</h3>
             {(() => {
-              const authorMap: Record<string, number> = {};
-              data.forEach((b) => {
-                if (b.author && b.author.trim()) {
-                  authorMap[b.author] = (authorMap[b.author] || 0) + 1;
-                }
+              const authorMap: { [key: string]: number } = {};
+              (data || []).forEach((b: any) => {
+                const author = b.author || "Unknown";
+                authorMap[author] = (authorMap[author] || 0) + 1;
               });
               const authorData = Object.entries(authorMap)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 10)
-                .map(([author, count]) => ({ author: author.substring(0, 15), fullAuthor: author, count }));
+                .map(([author, count]) => ({ author, count }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 10);
               return authorData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={240}>
-                  <BarChart data={authorData} layout="vertical">
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={authorData} layout="vertical" margin={{ left: 150 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis type="number" tick={{ fontSize: 11 }} />
-                    <YAxis dataKey="author" width={140} tick={{ fontSize: 10 }} />
-                    <Tooltip formatter={(value, name, props) => [value, props.payload.fullAuthor]} />
+                    <YAxis dataKey="author" type="category" tick={{ fontSize: 10 }} />
+                    <Tooltip />
                     <Bar dataKey="count" fill="#8b5cf6" />
                   </BarChart>
                 </ResponsiveContainer>
