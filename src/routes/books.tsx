@@ -143,11 +143,11 @@ function BooksPage() {
       user_id: user.id,
       title: form.title,
       author: form.author,
-      started_on: form.date_started || null,
-      finished_on: form.date_finished,
+      date_started: form.date_started || null,
+      date_finished: form.date_finished,
       rating: form.rating ? Number(form.rating) : null,
       pages: form.pages ? Number(form.pages) : null,
-      book_type: form.type || null,
+      type: form.type || null,
       year: form.year ? Number(form.year) : null,
     };
     if (form.genre) payload.genre = form.genre;
