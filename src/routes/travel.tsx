@@ -161,28 +161,50 @@ interface LocationFields {
   state: string;
   country: string;
   airport: string;
+  date: string;
+  travel_type: string; // travel type FROM previous stop TO this stop
   lat: number | null;
   lon: number | null;
 }
 
-const emptyLocation = (): LocationFields => ({ city: "", state: "", country: "", airport: "", lat: null, lon: null });
+const emptyLocation = (): LocationFields => ({
+  city: "", state: "", country: "", airport: "", date: "", travel_type: "flight", lat: null, lon: null,
+});
 
 function LocationBlock({
   label,
   loc,
   onChange,
-  showAirport,
+  isDeparture,
 }: {
   label: string;
   loc: LocationFields;
   onChange: (l: LocationFields) => void;
-  showAirport?: boolean;
+  isDeparture?: boolean;
 }) {
+  const isFlightLeg = loc.travel_type === "flight";
+
   return (
-    <div>
-      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{label}</p>
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <div className="sm:col-span-1">
+    <div className="space-y-2">
+      <div className="flex items-center gap-3">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</p>
+        {!isDeparture && (
+          <div className="flex items-center gap-2 ml-2">
+            <Select value={loc.travel_type} onValueChange={(v) => onChange({ ...loc, travel_type: v })}>
+              <SelectTrigger className="h-6 text-xs w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="flight">Flight</SelectItem>
+                <SelectItem value="drive">Drive</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-xs text-muted-foreground">from previous stop</span>
+          </div>
+        )}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+        <div>
           <CitySearch
             label="City"
             value={loc.city}
@@ -197,10 +219,20 @@ function LocationBlock({
           <Label>Country</Label>
           <Input value={loc.country} onChange={(e) => onChange({ ...loc, country: e.target.value })} />
         </div>
-        {showAirport && (
+        <div>
+          <Label>Date</Label>
+          <Input type="date" value={loc.date} onChange={(e) => onChange({ ...loc, date: e.target.value })} />
+        </div>
+        {!isDeparture && isFlightLeg && (
           <div>
             <Label>Airport</Label>
             <Input value={loc.airport} onChange={(e) => onChange({ ...loc, airport: e.target.value })} placeholder="e.g. JFK" />
+          </div>
+        )}
+        {isDeparture && isFlightLeg && (
+          <div>
+            <Label>Airport</Label>
+            <Input value={loc.airport} onChange={(e) => onChange({ ...loc, airport: e.target.value })} placeholder="e.g. ORD" />
           </div>
         )}
       </div>
@@ -225,7 +257,8 @@ function TravelPage() {
   const [multiCity, setMultiCity] = useState(false);
   const [departure, setDeparture] = useState<LocationFields>(emptyLocation());
   const [stops, setStops] = useState<LocationFields[]>([emptyLocation()]);
-  const [form, setForm] = useState({ date: "", travel_type: "flight", airline: "", roundtrip: false });
+  const [airline, setAirline] = useState("");
+  const [roundtrip, setRoundtrip] = useState(false);
 
   const addStop = () => setStops([...stops, emptyLocation()]);
   const removeStop = (i: number) => setStops(stops.filter((_, idx) => idx !== i));
@@ -235,12 +268,13 @@ function TravelPage() {
     let miles = 0;
     for (let i = 0; i < points.length - 1; i++) {
       const a = points[i], b = points[i + 1];
-      if (a.lat && a.lon && b.lat && b.lon) {
-        miles += haversine(a.lat, a.lon, b.lat, b.lon);
-      }
+      if (a.lat && a.lon && b.lat && b.lon) miles += haversine(a.lat, a.lon, b.lat, b.lon);
     }
     return Math.round(miles);
   };
+
+  // Determine overall travel type for the trip (first leg)
+  const primaryType = stops[0]?.travel_type || "flight";
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -252,7 +286,7 @@ function TravelPage() {
     try {
       const allPoints = [departure, ...stops];
       let miles = calcMiles(allPoints);
-      if (form.roundtrip) miles *= 2;
+      if (roundtrip) miles *= 2;
 
       const mainDest = stops[0];
       const extraStops = stops.slice(1);
@@ -265,10 +299,10 @@ function TravelPage() {
         state: mainDest.state,
         country: mainDest.country,
         destination_airport: mainDest.airport || null,
-        date: form.date,
-        travel_type: form.travel_type,
-        airline: form.travel_type === "flight" ? (form.airline || null) : null,
-        roundtrip: form.roundtrip,
+        date: stops[0].date || departure.date || null,
+        travel_type: primaryType,
+        airline: primaryType === "flight" ? (airline || null) : null,
+        roundtrip,
         miles,
         stops: extraStops.length > 0 ? extraStops : null,
       });
@@ -276,7 +310,8 @@ function TravelPage() {
       if (error) return toast.error(error.message);
       setDeparture(emptyLocation());
       setStops([emptyLocation()]);
-      setForm({ date: "", travel_type: "flight", airline: "", roundtrip: false });
+      setAirline("");
+      setRoundtrip(false);
       setMultiCity(false);
       qc.invalidateQueries({ queryKey: ["trips"] });
       toast.success(miles ? `Trip added · ${miles.toLocaleString()} miles` : "Trip added");
@@ -303,7 +338,7 @@ function TravelPage() {
       <div className="max-w-6xl mx-auto px-8 py-8 space-y-6">
         <Card className="p-4">
           <form onSubmit={add} className="space-y-5">
-            <LocationBlock label="Departure" loc={departure} onChange={setDeparture} showAirport={form.travel_type === "flight"} />
+            <LocationBlock label="Departure" loc={departure} onChange={setDeparture} isDeparture />
 
             <div className="flex items-center gap-3">
               <Switch checked={multiCity} onCheckedChange={setMultiCity} id="mc" />
@@ -311,9 +346,9 @@ function TravelPage() {
             </div>
 
             {stops.map((stop, i) => (
-              <div key={i} className="relative">
+              <div key={i} className="relative border-t border-border pt-4">
                 {multiCity && stops.length > 1 && (
-                  <button type="button" onClick={() => removeStop(i)} className="absolute -top-1 right-0 text-muted-foreground hover:text-destructive">
+                  <button type="button" onClick={() => removeStop(i)} className="absolute top-3 right-0 text-muted-foreground hover:text-destructive">
                     <X className="h-4 w-4" />
                   </button>
                 )}
@@ -321,7 +356,6 @@ function TravelPage() {
                   label={multiCity ? `Stop ${i + 1}` : "Destination"}
                   loc={stop}
                   onChange={(l) => updateStop(i, l)}
-                  showAirport={form.travel_type === "flight"}
                 />
               </div>
             ))}
@@ -332,29 +366,15 @@ function TravelPage() {
               </Button>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end pt-2 border-t border-border">
-              <div>
-                <Label>Date</Label>
-                <Input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
-              </div>
-              <div>
-                <Label>Type</Label>
-                <Select value={form.travel_type} onValueChange={(v) => setForm({ ...form, travel_type: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="flight">Flight</SelectItem>
-                    <SelectItem value="drive">Drive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {form.travel_type === "flight" && (
-                <div>
+            <div className="flex items-center gap-6 pt-2 border-t border-border flex-wrap">
+              {primaryType === "flight" && (
+                <div className="flex items-center gap-2">
                   <Label>Airline</Label>
-                  <Input value={form.airline} onChange={(e) => setForm({ ...form, airline: e.target.value })} />
+                  <Input className="w-36" value={airline} onChange={(e) => setAirline(e.target.value)} placeholder="e.g. United" />
                 </div>
               )}
               <div className="flex items-center gap-3">
-                <Switch checked={form.roundtrip} onCheckedChange={(v) => setForm({ ...form, roundtrip: v })} id="rt" />
+                <Switch checked={roundtrip} onCheckedChange={setRoundtrip} id="rt" />
                 <Label htmlFor="rt" className="cursor-pointer">Roundtrip</Label>
               </div>
             </div>
