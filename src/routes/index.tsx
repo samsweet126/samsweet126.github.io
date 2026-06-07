@@ -39,6 +39,43 @@ function Stat({ to, icon: Icon, label, value, sub }: any) {
   );
 }
 
+function TravelGoalWidget({ statesVisited }: { statesVisited: number }) {
+  const STATES_GOAL = 50;
+  const pct = Math.min(100, Math.round((statesVisited / STATES_GOAL) * 100));
+
+  return (
+    <Link to="/travel">
+      <Card className="hover:shadow-md transition-shadow h-full">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">Travel</CardTitle>
+          <Plane className="h-4 w-4 text-primary" />
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-end justify-between">
+            <div>
+              <div className="text-2xl font-semibold">{statesVisited}</div>
+              <p className="text-xs text-muted-foreground">States visited</p>
+            </div>
+            <div className="text-right">
+              <div className="text-lg font-medium text-muted-foreground">{STATES_GOAL}</div>
+              <p className="text-xs text-muted-foreground">Goal</p>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-500"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground text-right">{pct}% to goal</p>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
 function ChessGoalWidget({ rating }: { rating: number | undefined }) {
   const pct = rating
     ? Math.min(100, Math.round(((rating - CHESS_FLOOR) / (CHESS_GOAL - CHESS_FLOOR)) * 100))
@@ -211,12 +248,13 @@ function Dashboard() {
   const currentWeight = weights.data && weights.data.length > 0 ? weights.data[0].weight : null;
   const currentAmount = financesBalance.data && financesBalance.data.length > 0 ? Number(financesBalance.data[0].amount) : null;
   const flights = (trips.data ?? []).filter((t) => t.travel_type === "flight").length;
+  const statesVisited = new Set((trips.data ?? []).map((t: any) => t.state).filter(Boolean)).size;
 
   return (
     <>
       <PageHeader title="Dashboard" />
       <div className="max-w-5xl mx-auto px-8 py-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Stat to="/travel" icon={Plane} label="Travel" value={`${trips.data?.length ?? 0} trips`} sub={`${flights} flights`} />
+        <TravelGoalWidget statesVisited={statesVisited} />
         <ChessGoalWidget rating={rapidRating} />
         <BooksGoalWidget books2026={books2026} />
         <WeightGoalWidget currentWeight={currentWeight} />
