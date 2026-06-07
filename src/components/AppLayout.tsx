@@ -9,7 +9,7 @@ const nav = [
   { to: "/", label: "Dashboard", icon: Home },
   { to: "/travel", label: "Travel", icon: Plane },
   { to: "/chess", label: "Chess", icon: Trophy },
-  { to: "/fitness", label: "Fitness", icon: Dumbbell },
+  { to: "/weight", label: "Weight", icon: Dumbbell },
   { to: "/books", label: "Books", icon: BookOpen },
   { to: "/finances", label: "Finances", icon: Wallet },
 ];
