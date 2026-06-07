@@ -19,12 +19,12 @@ export const Route = createFileRoute("/weight")({
   head: () => ({ meta: [{ title: "Weight · Goal Tracker" }] }),
   component: () => (
     <RequireAuth>
-      <AppLayout><FitnessPage /></AppLayout>
+      <AppLayout><WeightPage /></AppLayout>
     </RequireAuth>
   ),
 });
 
-function FitnessPage() {
+function WeightPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data = [] } = useList<any>("weights", "date");
@@ -53,11 +53,10 @@ function FitnessPage() {
   };
 
   const currentWeight = data.length > 0 ? data[0].weight : null;
-  const minWeight = data.length > 0 ? Math.min(...data.map((w) => Number(w.weight))) : null;
 
   return (
     <>
-      <PageHeader title="Weight tracking" description={data.length > 0 ? `Current: ${currentWeight} lbs` : "Track your weight"} />
+      <PageHeader title="Weight" description={data.length > 0 ? `Current: ${currentWeight} lbs` : "Track your weight"} />
       <div className="max-w-5xl mx-auto px-8 py-8 space-y-6">
         <Card className="p-4">
           <form onSubmit={add} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">

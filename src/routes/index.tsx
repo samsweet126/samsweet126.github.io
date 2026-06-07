@@ -116,12 +116,13 @@ function BooksGoalWidget({ books2026 }: { books2026: number }) {
 
 function WeightGoalWidget({ currentWeight }: { currentWeight: number | null }) {
   const WEIGHT_GOAL = 215;
+  const WEIGHT_START = 240;
   const pct = currentWeight
-    ? Math.max(0, Math.min(100, Math.round(((currentWeight - WEIGHT_GOAL) / (250 - WEIGHT_GOAL)) * 100)))
+    ? Math.max(0, Math.min(100, Math.round(((WEIGHT_START - currentWeight) / (WEIGHT_START - WEIGHT_GOAL)) * 100)))
     : 0;
 
   return (
-    <Link to="/fitness">
+    <Link to="/weight">
       <Card className="hover:shadow-md transition-shadow h-full">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">Weight</CardTitle>
@@ -134,7 +135,7 @@ function WeightGoalWidget({ currentWeight }: { currentWeight: number | null }) {
               <p className="text-xs text-muted-foreground">Current</p>
             </div>
             <div className="text-right">
-              <div className="text-lg font-medium text-muted-foreground">{WEIGHT_GOAL}</div>
+              <div className="text-lg font-medium text-muted-foreground">{WEIGHT_GOAL} lbs</div>
               <p className="text-xs text-muted-foreground">Goal</p>
             </div>
           </div>
