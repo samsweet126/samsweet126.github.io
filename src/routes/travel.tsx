@@ -291,8 +291,8 @@ function TravelPage() {
     qc.invalidateQueries({ queryKey: ["trips"] });
   };
 
-  const flights = data.filter((t: any) => t.travel_type === "flight").length;
-  const drives = data.filter((t: any) => t.travel_type === "drive").length;
+  const flights = data.filter((t: any) => t.travel_type === "flight").reduce((a: number, t: any) => a + (t.roundtrip ? 2 : 1), 0);
+  const drives = data.filter((t: any) => t.travel_type === "drive").reduce((a: number, t: any) => a + (t.roundtrip ? 2 : 1), 0);
   const totalMiles = Math.round(data.reduce((a: number, t: any) => a + Number(t.miles ?? 0), 0));
   const statesVisited = new Set(data.map((t: any) => t.state).filter(Boolean)).size;
   const countriesVisited = new Set(data.map((t: any) => t.country).filter(Boolean)).size;
