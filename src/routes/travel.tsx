@@ -213,6 +213,15 @@ function TravelPage() {
   const qc = useQueryClient();
   const { data = [] } = useList<any>("trips", "date");
   const [loading, setLoading] = useState(false);
+
+  // Dynamically load Google Places JS SDK
+  useEffect(() => {
+    if ((window as any).google) return;
+    const script = document.createElement("script");
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_PLACES_API_KEY}&libraries=places`;
+    script.async = true;
+    document.head.appendChild(script);
+  }, []);
   const [multiCity, setMultiCity] = useState(false);
   const [departure, setDeparture] = useState<LocationFields>(emptyLocation());
   const [stops, setStops] = useState<LocationFields[]>([emptyLocation()]);
