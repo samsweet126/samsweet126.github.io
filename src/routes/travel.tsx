@@ -14,7 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useList } from "@/lib/queries";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Trash2, Loader2, MapPin, Plus, X } from "lucide-react";
+import { Trash2, Loader2, MapPin, Plus, X, ArrowUpDown } from "lucide-react";
 
 export const Route = createFileRoute("/travel")({
   head: () => ({ meta: [{ title: "Travel · Goal Tracker" }] }),
@@ -326,6 +326,31 @@ function TravelPage() {
     qc.invalidateQueries({ queryKey: ["trips"] });
   };
 
+  const [sortKey, setSortKey] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const handleSort = (key: string) => {
+    if (sortKey === key) setSortDir(sortDir === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+
+  const sortedData = [...data].sort((a: any, b: any) => {
+    if (!sortKey) return 0;
+    const av = a[sortKey], bv = b[sortKey];
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    return (av < bv ? -1 : av > bv ? 1 : 0) * (sortDir === "asc" ? 1 : -1);
+  });
+
+  const SortHead = ({ label, col }: { label: string; col: string }) => (
+    <TableHead className="cursor-pointer hover:bg-muted" onClick={() => handleSort(col)}>
+      <div className="flex items-center gap-1">
+        {label}
+        <ArrowUpDown className={`h-3 w-3 ${sortKey === col ? "text-primary" : "text-muted-foreground/30"}`} />
+      </div>
+    </TableHead>
+  );
+
   const flights = data.filter((t: any) => t.travel_type === "flight").reduce((a: number, t: any) => a + (t.roundtrip ? 2 : 1), 0);
   const drives = data.filter((t: any) => t.travel_type === "drive").reduce((a: number, t: any) => a + (t.roundtrip ? 2 : 1), 0);
   const totalMiles = Math.round(data.reduce((a: number, t: any) => a + Number(t.miles ?? 0), 0));
@@ -403,14 +428,14 @@ function TravelPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>From</TableHead>
-                <TableHead>To</TableHead>
-                <TableHead>Airport</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Airline</TableHead>
-                <TableHead>Roundtrip</TableHead>
-                <TableHead className="text-right">Miles</TableHead>
+                <SortHead label="From" col="departure_city" />
+                <SortHead label="To" col="city" />
+                <SortHead label="Airport" col="destination_airport" />
+                <SortHead label="Date" col="date" />
+                <SortHead label="Type" col="travel_type" />
+                <SortHead label="Airline" col="airline" />
+                <SortHead label="Roundtrip" col="roundtrip" />
+                <SortHead label="Miles" col="miles" />
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
@@ -420,7 +445,7 @@ function TravelPage() {
                   <TableCell colSpan={9} className="text-center text-muted-foreground py-8">No trips yet.</TableCell>
                 </TableRow>
               )}
-              {data.map((t: any) => (
+              {sortedData.map((t: any) => (
                 <TableRow key={t.id}>
                   <TableCell>{t.departure_city ? `${t.departure_city}${t.departure_state ? `, ${t.departure_state}` : ""}` : "—"}</TableCell>
                   <TableCell className="font-medium">

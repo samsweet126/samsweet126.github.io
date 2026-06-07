@@ -11,7 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TravelRouteImport } from './routes/travel'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as FitnessRouteImport } from './routes/fitness'
+import { Route as WeightRouteImport } from './routes/weight'
 import { Route as FinancesRouteImport } from './routes/finances'
 import { Route as ChessRouteImport } from './routes/chess'
 import { Route as BooksRouteImport } from './routes/books'
@@ -27,9 +27,9 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const FitnessRoute = FitnessRouteImport.update({
-  id: '/fitness',
-  path: '/fitness',
+const WeightRoute = WeightRouteImport.update({
+  id: '/weight',
+  path: '/weight',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FinancesRoute = FinancesRouteImport.update({
@@ -58,7 +58,7 @@ export interface FileRoutesByFullPath {
   '/books': typeof BooksRoute
   '/chess': typeof ChessRoute
   '/finances': typeof FinancesRoute
-  '/fitness': typeof FitnessRoute
+  '/weight': typeof WeightRoute
   '/login': typeof LoginRoute
   '/travel': typeof TravelRoute
 }
@@ -67,7 +67,7 @@ export interface FileRoutesByTo {
   '/books': typeof BooksRoute
   '/chess': typeof ChessRoute
   '/finances': typeof FinancesRoute
-  '/fitness': typeof FitnessRoute
+  '/weight': typeof WeightRoute
   '/login': typeof LoginRoute
   '/travel': typeof TravelRoute
 }
@@ -77,7 +77,7 @@ export interface FileRoutesById {
   '/books': typeof BooksRoute
   '/chess': typeof ChessRoute
   '/finances': typeof FinancesRoute
-  '/fitness': typeof FitnessRoute
+  '/weight': typeof WeightRoute
   '/login': typeof LoginRoute
   '/travel': typeof TravelRoute
 }
@@ -88,7 +88,7 @@ export interface FileRouteTypes {
     | '/books'
     | '/chess'
     | '/finances'
-    | '/fitness'
+    | '/weight'
     | '/login'
     | '/travel'
   fileRoutesByTo: FileRoutesByTo
@@ -97,7 +97,7 @@ export interface FileRouteTypes {
     | '/books'
     | '/chess'
     | '/finances'
-    | '/fitness'
+    | '/weight'
     | '/login'
     | '/travel'
   id:
@@ -106,7 +106,7 @@ export interface FileRouteTypes {
     | '/books'
     | '/chess'
     | '/finances'
-    | '/fitness'
+    | '/weight'
     | '/login'
     | '/travel'
   fileRoutesById: FileRoutesById
@@ -116,7 +116,7 @@ export interface RootRouteChildren {
   BooksRoute: typeof BooksRoute
   ChessRoute: typeof ChessRoute
   FinancesRoute: typeof FinancesRoute
-  FitnessRoute: typeof FitnessRoute
+  WeightRoute: typeof WeightRoute
   LoginRoute: typeof LoginRoute
   TravelRoute: typeof TravelRoute
 }
@@ -137,11 +137,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/fitness': {
-      id: '/fitness'
-      path: '/fitness'
-      fullPath: '/fitness'
-      preLoaderRoute: typeof FitnessRouteImport
+    '/weight': {
+      id: '/weight'
+      path: '/weight'
+      fullPath: '/weight'
+      preLoaderRoute: typeof WeightRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/finances': {
@@ -180,7 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   BooksRoute: BooksRoute,
   ChessRoute: ChessRoute,
   FinancesRoute: FinancesRoute,
-  FitnessRoute: FitnessRoute,
+  WeightRoute: WeightRoute,
   LoginRoute: LoginRoute,
   TravelRoute: TravelRoute,
 }
