@@ -1,0 +1,4 @@
+ALTER TABLE public.trips
+  ADD COLUMN IF NOT EXISTS departure_city TEXT,
+  ADD COLUMN IF NOT EXISTS departure_state TEXT,
+  ADD COLUMN IF NOT EXISTS miles NUMERIC;
