@@ -38,20 +38,20 @@ async function searchCities(query: string): Promise<CityResult[]> {
   if (query.length < 2) return [];
   const q = encodeURIComponent(query);
   const res = await fetch(
-    `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=6&featuretype=city&addressdetails=1`,
+    `https://photon.komoot.io/api/?q=${q}&limit=6&layer=city&layer=district`,
     { headers: { "Accept-Language": "en" } }
   );
   const data = await res.json();
-  return data
-    .filter((r: any) => r.type === "city" || r.type === "town" || r.type === "village" || r.class === "place")
-    .map((r: any) => ({
-      city: r.address?.city || r.address?.town || r.address?.village || r.address?.county || r.name,
-      state: r.address?.state || r.address?.region || "",
-      country: r.address?.country || "",
-      lat: parseFloat(r.lat),
-      lon: parseFloat(r.lon),
-      display: r.display_name,
-    }));
+  return (data.features || [])
+    .map((f: any) => ({
+      city: f.properties?.city || f.properties?.name || "",
+      state: f.properties?.state || f.properties?.county || "",
+      country: f.properties?.country || "",
+      lat: f.geometry?.coordinates?.[1],
+      lon: f.geometry?.coordinates?.[0],
+      display: [f.properties?.name, f.properties?.state, f.properties?.country].filter(Boolean).join(", "),
+    }))
+    .filter((r: CityResult) => r.city);
 }
 
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -207,7 +207,9 @@ function TravelPage() {
 
   const flights = data.filter((t: any) => t.travel_type === "flight").length;
   const drives = data.filter((t: any) => t.travel_type === "drive").length;
-  const totalMiles = data.reduce((a: number, t: any) => a + Number(t.miles ?? 0), 0);
+  const totalMiles = Math.round(data.reduce((a: number, t: any) => a + Number(t.miles ?? 0), 0));
+  const statesVisited = new Set(data.map((t: any) => t.state).filter(Boolean)).size;
+  const countriesVisited = new Set(data.map((t: any) => t.country).filter(Boolean)).size;
 
   return (
     <>
@@ -288,6 +290,21 @@ function TravelPage() {
             </Button>
           </form>
         </Card>
+
+        {/* Metrics */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[
+            { label: "Total miles", value: totalMiles.toLocaleString() },
+            { label: "Flights", value: flights },
+            { label: "States visited", value: statesVisited },
+            { label: "Countries visited", value: countriesVisited },
+          ].map((m) => (
+            <Card key={m.label} className="p-4 text-center">
+              <div className="text-3xl font-semibold">{m.value}</div>
+              <div className="text-xs text-muted-foreground mt-1">{m.label}</div>
+            </Card>
+          ))}
+        </div>
 
         <Card>
           <Table>
