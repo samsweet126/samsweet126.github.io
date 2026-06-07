@@ -8,13 +8,13 @@ import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useList } from "@/lib/queries";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Trash2, Loader2 } from "lucide-react";
+import { Trash2, Loader2, MapPin } from "lucide-react";
 
 export const Route = createFileRoute("/travel")({
   head: () => ({ meta: [{ title: "Travel · Goal Tracker" }] }),
@@ -25,20 +25,37 @@ export const Route = createFileRoute("/travel")({
   ),
 });
 
-// Geocode a city+state to lat/lon using OpenStreetMap Nominatim (free, no key needed)
-async function geocode(city: string, state: string): Promise<{ lat: number; lon: number } | null> {
-  const q = encodeURIComponent(`${city}, ${state}, USA`);
-  const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`, {
-    headers: { "Accept-Language": "en" },
-  });
-  const data = await res.json();
-  if (!data.length) return null;
-  return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+interface CityResult {
+  city: string;
+  state: string;
+  country: string;
+  lat: number;
+  lon: number;
+  display: string;
 }
 
-// Haversine great-circle distance in miles
+async function searchCities(query: string): Promise<CityResult[]> {
+  if (query.length < 2) return [];
+  const q = encodeURIComponent(query);
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=6&featuretype=city&addressdetails=1`,
+    { headers: { "Accept-Language": "en" } }
+  );
+  const data = await res.json();
+  return data
+    .filter((r: any) => r.type === "city" || r.type === "town" || r.type === "village" || r.class === "place")
+    .map((r: any) => ({
+      city: r.address?.city || r.address?.town || r.address?.village || r.address?.county || r.name,
+      state: r.address?.state || r.address?.region || "",
+      country: r.address?.country || "",
+      lat: parseFloat(r.lat),
+      lon: parseFloat(r.lon),
+      display: r.display_name,
+    }));
+}
+
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 3958.8; // Earth radius in miles
+  const R = 3958.8;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -47,48 +64,123 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number): numb
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+interface CitySearchProps {
+  label: string;
+  onSelect: (result: CityResult) => void;
+  value: string;
+}
+
+function CitySearch({ label, onSelect, value }: CitySearchProps) {
+  const [query, setQuery] = useState(value);
+  const [results, setResults] = useState<CityResult[]>([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setQuery(value); }, [value]);
+
+  useEffect(() => {
+    if (debounce.current) clearTimeout(debounce.current);
+    if (query.length < 2) { setResults([]); return; }
+    debounce.current = setTimeout(async () => {
+      setLoading(true);
+      const r = await searchCities(query);
+      setResults(r);
+      setOpen(r.length > 0);
+      setLoading(false);
+    }, 350);
+    return () => { if (debounce.current) clearTimeout(debounce.current); };
+  }, [query]);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  return (
+    <div ref={containerRef} className="relative">
+      <Label>{label}</Label>
+      <div className="relative">
+        <Input
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+          onFocus={() => results.length > 0 && setOpen(true)}
+          placeholder="Search city…"
+          autoComplete="off"
+        />
+        {loading && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />}
+      </div>
+      {open && results.length > 0 && (
+        <div className="absolute z-50 mt-1 w-full max-w-sm bg-popover border border-border rounded-md shadow-lg overflow-hidden">
+          {results.map((r, i) => (
+            <button
+              key={i}
+              type="button"
+              className="w-full flex items-start gap-2 px-3 py-2 text-left text-sm hover:bg-muted transition-colors border-b border-border last:border-0"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onSelect(r);
+                setQuery(`${r.city}, ${r.state || r.country}`);
+                setOpen(false);
+              }}
+            >
+              <MapPin className="h-3 w-3 mt-0.5 text-muted-foreground flex-shrink-0" />
+              <div>
+                <div className="font-medium">{r.city}</div>
+                <div className="text-xs text-muted-foreground">{[r.state, r.country].filter(Boolean).join(", ")}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface LocationFields {
+  city: string;
+  state: string;
+  country: string;
+  lat: number | null;
+  lon: number | null;
+}
+
+const emptyLocation = (): LocationFields => ({ city: "", state: "", country: "", lat: null, lon: null });
+
 function TravelPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data = [] } = useList<any>("trips", "date");
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
-    departure_city: "",
-    departure_state: "",
-    city: "",
-    state: "",
-    date: "",
-    travel_type: "flight",
-    airline: "",
-    roundtrip: false,
-  });
+  const [departure, setDeparture] = useState<LocationFields>(emptyLocation());
+  const [destination, setDestination] = useState<LocationFields>(emptyLocation());
+  const [form, setForm] = useState({ date: "", travel_type: "flight", airline: "", roundtrip: false });
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !departure.city || !destination.city) {
+      toast.error("Select both a departure and destination city");
+      return;
+    }
     setLoading(true);
-
     try {
-      // Geocode both cities
-      const [origin, dest] = await Promise.all([
-        geocode(form.departure_city, form.departure_state),
-        geocode(form.city, form.state),
-      ]);
-
       let miles: number | null = null;
-      if (origin && dest) {
-        miles = Math.round(haversine(origin.lat, origin.lon, dest.lat, dest.lon));
+      if (departure.lat && departure.lon && destination.lat && destination.lon) {
+        miles = Math.round(haversine(departure.lat, departure.lon, destination.lat, destination.lon));
         if (form.roundtrip) miles *= 2;
-      } else {
-        toast.error("Couldn't calculate miles — check city/state names");
       }
 
       const { error } = await supabase.from("trips").insert({
         user_id: user.id,
-        departure_city: form.departure_city,
-        departure_state: form.departure_state,
-        city: form.city,
-        state: form.state,
+        departure_city: departure.city,
+        departure_state: departure.state,
+        city: destination.city,
+        state: destination.state,
+        country: destination.country,
         date: form.date,
         travel_type: form.travel_type,
         airline: form.travel_type === "flight" ? (form.airline || null) : null,
@@ -97,7 +189,9 @@ function TravelPage() {
       });
 
       if (error) return toast.error(error.message);
-      setForm({ departure_city: "", departure_state: "", city: "", state: "", date: "", travel_type: "flight", airline: "", roundtrip: false });
+      setDeparture(emptyLocation());
+      setDestination(emptyLocation());
+      setForm({ date: "", travel_type: "flight", airline: "", roundtrip: false });
       qc.invalidateQueries({ queryKey: ["trips"] });
       toast.success(miles ? `Trip added · ${miles.toLocaleString()} miles` : "Trip added");
     } finally {
@@ -111,8 +205,8 @@ function TravelPage() {
     qc.invalidateQueries({ queryKey: ["trips"] });
   };
 
-  const flights = data.filter((t) => t.travel_type === "flight").length;
-  const drives = data.filter((t) => t.travel_type === "drive").length;
+  const flights = data.filter((t: any) => t.travel_type === "flight").length;
+  const drives = data.filter((t: any) => t.travel_type === "drive").length;
   const totalMiles = data.reduce((a: number, t: any) => a + Number(t.miles ?? 0), 0);
 
   return (
@@ -120,29 +214,49 @@ function TravelPage() {
       <PageHeader title="Travel log" description={`${data.length} trips · ${flights} flights · ${drives} drives · ${totalMiles.toLocaleString()} miles`} />
       <div className="max-w-6xl mx-auto px-8 py-8 space-y-6">
         <Card className="p-4">
-          <form onSubmit={add} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-6 gap-3">
-              {/* Departure */}
-              <div className="sm:col-span-6 text-xs font-medium text-muted-foreground uppercase tracking-wide">Departure</div>
-              <div className="sm:col-span-2">
-                <Label>Departure city</Label>
-                <Input required value={form.departure_city} onChange={(e) => setForm({ ...form, departure_city: e.target.value })} />
+          <form onSubmit={add} className="space-y-5">
+            {/* Departure */}
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Departure</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <CitySearch
+                  label="City"
+                  value={departure.city}
+                  onSelect={(r) => setDeparture({ city: r.city, state: r.state, country: r.country, lat: r.lat, lon: r.lon })}
+                />
+                <div>
+                  <Label>State / Region</Label>
+                  <Input value={departure.state} onChange={(e) => setDeparture({ ...departure, state: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Country</Label>
+                  <Input value={departure.country} onChange={(e) => setDeparture({ ...departure, country: e.target.value })} />
+                </div>
               </div>
-              <div>
-                <Label>State</Label>
-                <Input required value={form.departure_state} onChange={(e) => setForm({ ...form, departure_state: e.target.value })} placeholder="IL" maxLength={2} />
-              </div>
+            </div>
 
-              {/* Destination */}
-              <div className="sm:col-span-6 text-xs font-medium text-muted-foreground uppercase tracking-wide pt-2">Destination</div>
-              <div className="sm:col-span-2">
-                <Label>Destination city</Label>
-                <Input required value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+            {/* Destination */}
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Destination</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <CitySearch
+                  label="City"
+                  value={destination.city}
+                  onSelect={(r) => setDestination({ city: r.city, state: r.state, country: r.country, lat: r.lat, lon: r.lon })}
+                />
+                <div>
+                  <Label>State / Region</Label>
+                  <Input value={destination.state} onChange={(e) => setDestination({ ...destination, state: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Country</Label>
+                  <Input value={destination.country} onChange={(e) => setDestination({ ...destination, country: e.target.value })} />
+                </div>
               </div>
-              <div>
-                <Label>State</Label>
-                <Input required value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} placeholder="NY" maxLength={2} />
-              </div>
+            </div>
+
+            {/* Trip details */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
               <div>
                 <Label>Date</Label>
                 <Input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
@@ -163,13 +277,14 @@ function TravelPage() {
                   <Input value={form.airline} onChange={(e) => setForm({ ...form, airline: e.target.value })} />
                 </div>
               )}
-              <div className="flex items-center gap-3 sm:col-span-6">
+              <div className="flex items-center gap-3">
                 <Switch checked={form.roundtrip} onCheckedChange={(v) => setForm({ ...form, roundtrip: v })} id="rt" />
-                <Label htmlFor="rt" className="cursor-pointer">Roundtrip (doubles miles)</Label>
+                <Label htmlFor="rt" className="cursor-pointer">Roundtrip</Label>
               </div>
             </div>
+
             <Button type="submit" disabled={loading}>
-              {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Calculating miles…</> : "Add trip"}
+              {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Calculating miles…</> : "Add trip"}
             </Button>
           </form>
         </Card>
@@ -196,13 +311,13 @@ function TravelPage() {
               )}
               {data.map((t: any) => (
                 <TableRow key={t.id}>
-                  <TableCell>{t.departure_city ? `${t.departure_city}, ${t.departure_state}` : "—"}</TableCell>
-                  <TableCell className="font-medium">{t.city}, {t.state}</TableCell>
+                  <TableCell>{t.departure_city ? `${t.departure_city}${t.departure_state ? `, ${t.departure_state}` : ""}` : "—"}</TableCell>
+                  <TableCell className="font-medium">{t.city}{t.state ? `, ${t.state}` : ""}{t.country ? ` · ${t.country}` : ""}</TableCell>
                   <TableCell>{t.date}</TableCell>
                   <TableCell className="capitalize">{t.travel_type}</TableCell>
                   <TableCell>{t.airline ?? "—"}</TableCell>
                   <TableCell>{t.roundtrip ? "Yes" : "No"}</TableCell>
-                  <TableCell className="text-right">{t.miles ? t.miles.toLocaleString() : "—"}</TableCell>
+                  <TableCell className="text-right">{t.miles ? Number(t.miles).toLocaleString() : "—"}</TableCell>
                   <TableCell>
                     <Button variant="ghost" size="icon" onClick={() => del(t.id)}>
                       <Trash2 className="h-4 w-4" />
