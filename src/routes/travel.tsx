@@ -34,36 +34,39 @@ interface CityResult {
   display: string;
 }
 
-async function searchCities(query: string): Promise<CityResult[]> {
-  if (query.length < 2) return [];
-  const key = import.meta.env.VITE_GOOGLE_PLACES_API_KEY;
-
-  // Step 1: Autocomplete
-  const acRes = await fetch(
-    `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&types=(cities)&key=${key}`
-  );
-  const acData = await acRes.json();
-  if (!acData.predictions?.length) return [];
-
-  // Step 2: Get details (lat/lon + address components) for each prediction
-  const results = await Promise.all(
-    acData.predictions.slice(0, 6).map(async (p: any) => {
-      const detailRes = await fetch(
-        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${p.place_id}&fields=geometry,address_components,name&key=${key}`
-      );
-      const detail = await detailRes.json();
-      const comps: any[] = detail.result?.address_components || [];
-      const get = (type: string) => comps.find((c: any) => c.types.includes(type))?.long_name || "";
-      const city = get("locality") || get("administrative_area_level_2") || detail.result?.name || "";
-      const state = get("administrative_area_level_1");
-      const country = get("country");
-      const lat = detail.result?.geometry?.location?.lat;
-      const lon = detail.result?.geometry?.location?.lng;
-      return { city, state, country, lat, lon, display: p.description };
-    })
-  );
-
-  return results.filter((r) => r.city && r.lat);
+function searchCities(query: string): Promise<CityResult[]> {
+  return new Promise((resolve) => {
+    if (query.length < 2 || !(window as any).google) return resolve([]);
+    const svc = new (window as any).google.maps.places.AutocompleteService();
+    svc.getPlacePredictions(
+      { input: query, types: ["(cities)"] },
+      (predictions: any[], status: string) => {
+        if (status !== "OK" || !predictions?.length) return resolve([]);
+        const geocoder = new (window as any).google.maps.Geocoder();
+        Promise.all(
+          predictions.slice(0, 6).map(
+            (p: any) =>
+              new Promise<CityResult | null>((res) => {
+                geocoder.geocode({ placeId: p.place_id }, (results: any[], s: string) => {
+                  if (s !== "OK" || !results[0]) return res(null);
+                  const comps = results[0].address_components;
+                  const get = (type: string) =>
+                    comps.find((c: any) => c.types.includes(type))?.long_name || "";
+                  res({
+                    city: get("locality") || get("administrative_area_level_2") || p.structured_formatting.main_text,
+                    state: get("administrative_area_level_1"),
+                    country: get("country"),
+                    lat: results[0].geometry.location.lat(),
+                    lon: results[0].geometry.location.lng(),
+                    display: p.description,
+                  });
+                });
+              })
+          )
+        ).then((all) => resolve(all.filter(Boolean) as CityResult[]));
+      }
+    );
+  });
 }
 
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
