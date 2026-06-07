@@ -114,6 +114,43 @@ function BooksGoalWidget({ books2026 }: { books2026: number }) {
   );
 }
 
+function FinancesGoalWidget({ currentAmount }: { currentAmount: number | null }) {
+  const FINANCES_GOAL = 600;
+  const pct = currentAmount ? Math.min(100, Math.round((currentAmount / FINANCES_GOAL) * 100)) : 0;
+
+  return (
+    <Link to="/finances">
+      <Card className="hover:shadow-md transition-shadow h-full">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">Finances</CardTitle>
+          <Wallet className="h-4 w-4 text-primary" />
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-end justify-between">
+            <div>
+              <div className="text-2xl font-semibold">{currentAmount ? `$${currentAmount.toFixed(2)}` : "—"}</div>
+              <p className="text-xs text-muted-foreground">Current</p>
+            </div>
+            <div className="text-right">
+              <div className="text-lg font-medium text-muted-foreground">${FINANCES_GOAL}</div>
+              <p className="text-xs text-muted-foreground">Goal</p>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-500"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground text-right">{pct}% to goal</p>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
 function WeightGoalWidget({ currentWeight }: { currentWeight: number | null }) {
   const WEIGHT_GOAL = 215;
   const WEIGHT_START = 240;
@@ -158,7 +195,7 @@ function Dashboard() {
   const trips = useList<any>("trips", "date");
   const weights = useList<any>("weights", "date");
   const books = useList<any>("books", "date_finished");
-  const finances = useList<any>("finances", "date");
+  const financesBalance = useList<any>("finances_balance", "date");
 
   const chessStats = useQuery({
     queryKey: ["chess", CHESS_USERNAME],
@@ -172,8 +209,8 @@ function Dashboard() {
 
   const books2026 = (books.data ?? []).filter((b) => b.date_finished?.startsWith("2026")).length;
   const currentWeight = weights.data && weights.data.length > 0 ? weights.data[0].weight : null;
+  const currentAmount = financesBalance.data && financesBalance.data.length > 0 ? Number(financesBalance.data[0].amount) : null;
   const flights = (trips.data ?? []).filter((t) => t.travel_type === "flight").length;
-  const totalSpend = (finances.data ?? []).reduce((a, f) => a + Number(f.amount ?? 0), 0);
 
   return (
     <>
@@ -183,7 +220,7 @@ function Dashboard() {
         <ChessGoalWidget rating={rapidRating} />
         <BooksGoalWidget books2026={books2026} />
         <WeightGoalWidget currentWeight={currentWeight} />
-        <Stat to="/finances" icon={Wallet} label="Finances" value={`$${totalSpend.toFixed(2)}`} sub={`${finances.data?.length ?? 0} entries`} />
+        <FinancesGoalWidget currentAmount={currentAmount} />
       </div>
     </>
   );
